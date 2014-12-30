@@ -198,7 +198,7 @@ R20141014$Mode <- "Epos"
 
 # 20141017 Eneg run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project")
+setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project/Busulfan retrospective study")
 R20141017 <- loadWorkbook("Busulfan EnegP IS peaks.xlsx")
 setMissingValue(R20141017, value = "")
 R20141017 <- readWorksheet(R20141017, sheet = "Sheet1", startRow = 2)
@@ -240,7 +240,7 @@ R20141017$Mode <- "Eneg"
 
 # 20141015 Epos run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project")
+setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project/Busulfan retrospective study")
 R20141015 <- loadWorkbook("Busulfan EposP IS peaks.xlsx")
 setMissingValue(R20141015, value = "")
 R20141015 <- readWorksheet(R20141015, sheet = "Sheet1", startRow = 2)
@@ -282,6 +282,158 @@ R20141015$Mode <- "Epos"
 
 # SCOR MDZ ===================================================
 
+# 20110211 EposU run --------------------------------------------
+setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics urine samples/20110211 SCOR subjects 1-6")
+R20110211 <- loadWorkbook("20110211 SCOR subjects 1-6.xlsx")
+setMissingValue(R20110211, value = "")
+R20110211 <- readWorksheet(R20110211, sheet = "data", startRow = 1,
+                           endRow = 45)
+names(R20110211)
+R20110211 <- plyr::rename(R20110211, 
+                          c("Sample.type" = "SampType",
+                            "file.name" = "File",
+                            "X5.MT.RT" = "MT.RT",
+                            "X5.MT.Area" = "MT.Area",
+                            "PROG.Area" = "Prog.Area",
+                            "PROG.RT" = "Prog.RT"))
+
+R20110211$DateTime <- ymd("20110211")
+R20110211$Sample <- paste(R20110211$Subject, 
+                          R20110211$X3rd.trimester.or.post.partum,
+                          R20110211$time.point)
+
+IS <- c("MT", "RSG", "MDZ", "Prog")
+
+# Switching the values to drop "urine" from QC and Master QC sample types.
+R20110211$SampType[R20110211$SampType == "QC urine"] <- "QC"
+R20110211$SampType[R20110211$SampType == "Master QC urine"] <- "Master QC"
+
+# Changing sample type of "urine" to "clinical".
+R20110211$SampType[R20110211$SampType == "urine"] <- "clinical"
+
+# Removing blank and water injections.
+R20110211 <- R20110211[R20110211$Matrix == "urine", ]
+
+# Keeping only required columns.
+R20110211 <- R20110211[, c("Sample", "File", "DateTime", "Matrix", "SampType",
+                           paste(rep(IS, each = 2), sep=".", 
+                                 rep(c("RT", "Area"), length(IS))))]
+
+# Reshaping data to long format
+R20110211 <- R20110211 %>% gather(key, Value, -Sample, -File, -DateTime,
+                                  -Matrix, -SampType) %>%
+      separate(key, c("IS", "Type"), "\\.") %>% spread(Type, Value)
+
+# Adding a column for the run
+R20110211$Run <- "SCOR MDZ 20110211"
+
+# Adding a column for the mode
+R20110211$Mode <- "Epos"
+
+
+# 20110223 EposU run --------------------------------------------
+setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics urine samples/20110223 SCOR subjects 7-15")
+R20110223 <- loadWorkbook("20110223 SCOR subjects 7-15.xlsx")
+setMissingValue(R20110223, value = "")
+R20110223 <- readWorksheet(R20110223, sheet = "20110223", startRow = 1,
+                           endRow = 63)
+names(R20110223)
+R20110223 <- plyr::rename(R20110223, 
+                          c("file.name" = "File",
+                            "X5.MT.RT" = "MT.RT",
+                            "X5.MT.Area" = "MT.Area",
+                            "ROS.Area" = "RSG.Area",
+                            "ROS.RT" = "RSG.RT"))
+
+R20110223$DateTime <- ymd("20110223")
+R20110223$Sample <- paste(R20110223$Subject, 
+                          R20110223$X3rd.trimester.or.post.partum,
+                          R20110223$time.point)
+
+IS <- c("MT", "RSG", "MDZ", "Prog")
+
+# Adding sample type column
+R20110223$SampType <- "clinical"
+R20110223$SampType[R20110223$Subject == "Master QC"] <- "Master QC"
+R20110223$SampType[R20110223$Subject == "QC"] <- "QC"
+
+# Removing blank and water injections.
+R20110223 <- R20110223[!(R20110223$Subject %in% c("blank", "water")), ]
+
+# Fixing the matrix when it was "urine-blank"
+R20110223$Matrix <- "urine"
+
+# Keeping only required columns.
+R20110223 <- R20110223[, c("Sample", "File", "DateTime", "Matrix", "SampType",
+                           paste(rep(IS, each = 2), sep=".", 
+                                 rep(c("RT", "Area"), length(IS))))]
+
+# Reshaping data to long format
+R20110223 <- R20110223 %>% gather(key, Value, -Sample, -File, -DateTime,
+                                  -Matrix, -SampType) %>%
+      separate(key, c("IS", "Type"), "\\.") %>% spread(Type, Value)
+
+# Adding a column for the run
+R20110223$Run <- "SCOR MDZ 20110223"
+
+# Adding a column for the mode
+R20110223$Mode <- "Epos"
+
+
+# 20110620 EposP run --------------------------------------------
+setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics plasma samples/20110620 SCOR plasma samples run #3")
+R20110620 <- loadWorkbook("20110620 IS peak areas.xlsx")
+setMissingValue(R20110620, value = "")
+R20110620 <- readWorksheet(R20110620, sheet = "IS peak areas", startRow = 1,
+                           endRow = 40)
+names(R20110620)
+R20110620 <- plyr::rename(R20110620, 
+                          c("Data.File" = "File",
+                            "Acq..Date.Time" = "DateTime",
+                            "Sample.Type" = "SampType",
+                            "X5.MT.RT" = "MT.RT",
+                            "X5.MT.Height" = "MT.Height",
+                            "X5.MT.Area" = "MT.Area"))
+
+R20110620$Sample <- paste(R20110620$Subject, 
+                          R20110620$Gestation.state)
+
+# Fixing the sample type when it was "QC plasma" and when it was just "plasma"
+R20110620$SampType[R20110620$SampType == "QC plasma"] <- "QC"
+R20110620$SampType[R20110620$SampType == "plasma"] <- "clinical"
+
+# Removing blank and water injections.
+R20110620 <- R20110620[R20110620$SampType != "water", ]
+
+# Removing samples that were for adjusting for matrix
+R20110620 <- R20110620[! str_detect(R20110620$Name, "adjust"), ]
+
+# Adding a column for the matrix
+R20110620$Matrix <- "plasma"
+R20110620$Matrix[R20110620$SampType == "Master QC"] <- "urine"
+
+IS <- c("MT", "RSG", "MDZ", "Prog")
+
+
+# Keeping only required columns.
+R20110620 <- R20110620[, c("Sample", "File", "DateTime", "Matrix", "SampType",
+                           paste(rep(IS, each = 2), sep=".", 
+                                 rep(c("RT", "Area"), length(IS))))]
+
+# Reshaping data to long format
+R20110620 <- R20110620 %>% gather(key, Value, -Sample, -File, -DateTime,
+                                  -Matrix, -SampType) %>%
+      separate(key, c("IS", "Type"), "\\.") %>% spread(Type, Value)
+
+# Adding a column for the run
+R20110620$Run <- "SCOR MDZ 20110620"
+
+# Adding a column for the mode
+R20110620$Mode <- "Epos"
+
+
+
+
 # 20130201 EnegP run =======================================
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI-")
 R20130201 <- loadWorkbook("20130201 SCOR EnegP IS peak areas and RTs.xlsx")
@@ -315,7 +467,7 @@ R20130201$Run <- "SCOR MDZ 20130201"
 # Adding a column for the mode
 R20130201$Mode <- "Eneg"
 
-# 20120202 EnegP run ======================================
+# 20120202 EnegU and EnegP run ======================================
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI-/20120202 SCOR urine and plasma ESI-")
 R20120202 <- loadWorkbook("ESI- IS quant results with smoothing.xlsx")
 setMissingValue(R20120202, value = "")
@@ -674,14 +826,15 @@ R20140222$Mode <- "Eneg"
 # Putting all the data.frames together ==================================
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics")
 
-DF <- list(R20110504, R20120202, R20121008, R20130201,
+DF <- list(R20110211, R20110223, R20110620, R20141017, 
+           R20110504, R20120202, R20121008, R20130201,
            R20140222, R20140327, R20140630, R20140701,
            R20140714, R20140716, R20140930, R20141014,
            R20141015, R20141117, R20141118)
 
-ldply(DF, function(x) c(range(x$RT, na.rm = T), 
-                        range(x$Area, na.rm = T), 
-                        range(x$Height, na.rm = T)))
+# Some of my data.frames had the class wrong for DateTime. Checking that.
+llply(DF, function(x) class(x$DateTime))
+# Good. Problem fixed.
 
 Data <- rbind.fill(DF)
 Data <- Data[Data$Matrix != "water" & Data$Matrix != "whole blood", ]
@@ -698,55 +851,68 @@ Runs$PreppedBy[Runs$Run %in% c("CHC2 20110504", "CHC2 20121008",
 
 Data$Run <- factor(Data$Run, levels = Runs$Run)
 
-# Replacing "NA" in peak and height columns with 0 since those peaks were not 
+# Replacing "NA" in peak area column with 0 since those peaks were not 
 # detected because their peak areas and heights were 0, not just missing.
 Data$Area[is.na(Data$Area)] <- 0
-Data$Height[is.na(Data$Height)] <- 0
+# Data$Height[is.na(Data$Height)] <- 0  # Sometimes, I didn't collect data on 
+#the height, only the area, so I don't want to set these values as zero.
 
-Data <- join(Data, Runs, by = "Run") # Final, complete data
+Data <- join(Data, Runs, by = "Run") 
 
-Epos <- Data[Data$Mode == "Epos", ]
+# Final, complete data
+Data <- Data[, c("Sample", "File", "DateTime", "Matrix", "SampType", 
+                 "IS", "Area", "Height", "RT", "Run", "Mode", "Date", 
+                 "PreppedBy")]
+Data <- arrange(Data, Date, DateTime, File)
+Data$Date <- as.factor(Data$Date)
 
-MQC.pos <- Data[Data$Mode == "Epos" & Data$SampType == "Master QC", ]
+save(Data, Runs, DF, file = "IS peak areas for several runs.RData")
+
+
+# Epos IS peak areas ===================================================
+Epos <- Data[Data$Mode == "Epos" & Data$SampType == "clinical", ]
+
+MQC.pos <- Data[Data$Mode == "Epos" & Data$SampType == "Master QC" &
+                      Data$DateTime < "2014-09-01", ]
 
 windows()
-ggplot(MQC.pos, aes(x = Run, y = Area, fill = Run)) + geom_boxplot() + 
-      facet_wrap(~ IS) + ggtitle("Master QC ESI+") +
+ggplot(MQC.pos, aes(x = Date, y = Area, fill = Run)) + geom_boxplot() + 
+      facet_wrap(~ IS, scales = "free") + ggtitle("Master QC ESI+") +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
-ggsave("Master QC Epos boxplot of IS peak areas.png", height = 8, width = 10)
+
+ggsave("Master QC Epos boxplot of IS peak areas.png", height = 8, width = 14)
 
 windows()
-ggplot(Epos, aes(x = Run, y = Area, fill = Matrix)) + geom_boxplot() + 
-      facet_grid(IS ~ SampType, scale = "free") + 
+ggplot(Epos, aes(x = Run, y = Area, fill = Run)) + geom_boxplot() + 
+      facet_grid(IS ~ Matrix, scale = "free") + 
       ggtitle("All Samples ESI+") +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
-ggsave("All samples Epos boxplot of IS peak areas by matrix.png", 
-       height = 8, width = 10)
+
+ggsave("All Epos clinical samples - boxplot of IS peak areas by matrix.png", 
+       height = 12, width = 8)
+
+
+# Eneg IS peak areas ===================================================
+Eneg <- Data[Data$Mode == "Eneg" & Data$SampType == "clinical", ]
+
+MQC.neg <- Data[Data$Mode == "Eneg" & Data$SampType == "Master QC" &
+                      Data$DateTime < "2014-09-01", ]
+
+
+ggplot(MQC.neg, aes(x = Date, y = Area, fill = Run)) + geom_boxplot() + 
+      facet_wrap(~ IS, scales = "free") + ggtitle("Master QC ESI-") +
+      theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+ggsave("Master QC Eneg boxplot of IS peak areas.png", height = 8, width = 14)
 
 windows()
-ggplot(Epos[Epos$SampType == "clinical", ], 
-       aes(x = Run, y = Area, fill = Matrix)) + geom_boxplot() + 
-      facet_grid(IS ~ SampType, scale = "free") + 
-      ggtitle("All Samples ESI+") +
+ggplot(Eneg, aes(x = Run, y = Area, fill = Run)) + geom_boxplot() + 
+      facet_grid(IS ~ Matrix, scale = "free") + 
+      ggtitle("All clinical samples ESI-") +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
-ggsave("Clinical Epos boxplot of IS peak areas.png", height = 8, width = 10)
 
-
-
-# Looking at Eneg samples
-Eneg <- Data[Data$Mode == "Eneg", ]
-MQC.neg <- Eneg[Eneg$SampType == "Master QC", ]
-
-windows()
-ggplot(MQC.neg[MQC.neg$Run != "SCOR MDZ 20120202" &
-                     MQC.neg$PreppedBy == "LS", ], 
-       aes(x = Run, y = Area, fill = IS)) +
-      geom_boxplot() + ggtitle("Master QC ESI-") +
-      facet_wrap(~ IS, scale = "free") +
-      theme(axis.text.x = element_text(angle = 30, hjust = 1))
-ggsave("Master QC Eneg boxplot of IS peak areas.png", height = 8, width = 10)
-
-
+ggsave("All Eneg clinical samples - boxplot of IS peak areas by matrix.png", 
+       height = 12, width = 8)
 
 
 # Just checking recent runs that I prepped. Removing 5-MT b/c that's not even
@@ -784,10 +950,21 @@ MeanRT <- ddply(Data, c("Run", "IS", "Matrix"), function(x)
                 Ave = mean(x$RT, na.rm = T))
 MeanRT <- plyr::rename(MeanRT, c("V1" = "MeanRT"))
 
+RT.Epos <- MeanRT[MeanRT$IS %in% c("MT", "MDZ", "RSG", "Prog"), ]
+RT.Eneg <- MeanRT[MeanRT$IS %in% c("Salicylic", "Stearic", "Pred"), ]
+
 windows()
-ggplot(MeanRT, aes(x = Run, y = MeanRT, fill = Matrix, color = Matrix)) +
+ggplot(RT.Epos, aes(x = Run, y = MeanRT, fill = Matrix, color = Matrix)) +
       geom_boxplot() + 
       facet_wrap( ~ IS, scale = "free", ncol = 2) +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
-ggsave("All samples - boxplot comparing RTs for all IS.png", 
-       height = 15, width = 8)
+ggsave("Boxplots comparing RTs for all Epos IS.png", 
+       height = 8, width = 10)
+
+
+ggplot(RT.Eneg, aes(x = Run, y = MeanRT, fill = Matrix, color = Matrix)) +
+      geom_boxplot() + 
+      facet_wrap( ~ IS, scale = "free", ncol = 2) +
+      theme(axis.text.x = element_text(angle = 30, hjust = 1))
+ggsave("Boxplots comparing RTs for all Eneg IS.png", 
+       height = 8, width = 10)
