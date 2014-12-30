@@ -859,6 +859,13 @@ Data$Area[is.na(Data$Area)] <- 0
 
 Data <- join(Data, Runs, by = "Run") 
 
+# Some runs have DateTime < 2006, which is impossible. Fixing those.
+Data[Data$DateTime < "2006-01-01", ]
+
+Data$DateTime[Data$File == "20140630 Metoprolol EposP Master QC.d"] <- 
+      "2014-07-01"
+
+
 # Final, complete data
 Data <- Data[, c("Sample", "File", "DateTime", "Matrix", "SampType", 
                  "IS", "Area", "Height", "RT", "Run", "Mode", "Date", 
@@ -968,3 +975,13 @@ ggplot(RT.Eneg, aes(x = Run, y = MeanRT, fill = Matrix, color = Matrix)) +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ggsave("Boxplots comparing RTs for all Eneg IS.png", 
        height = 8, width = 10)
+
+
+# Loess fit of changing RTs for each IS
+ggplot(Data, aes(x = DateTime, y = RT, color = IS)) +
+      geom_point() +
+      facet_wrap(IS ~ Mode, scales = "free") +
+      stat_smooth(method=loess)
+ggsave("Scatter plot showing how IS RT changes with time.png", 
+       height = 8, width = 12)
+
