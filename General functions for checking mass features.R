@@ -35,7 +35,7 @@ ThemeLaura <- function (base_size = 12, base_family = "") {
 theme_set(ThemeLaura())
 
 
-MainDir <- "C:/Users/Laura/Documents/SCOR project"
+MainDir <- "C:/Users/Laura/Documents/LCMS metabolomics"
 
 setwd(MainDir)
 
@@ -53,7 +53,7 @@ setwd(MainDir)
 # 3. ionization mode (Mode)
 # 4. and matrix (Matrix)
 # for each file you want to extract the EIC data from.
-# Column names must match. This creates a new list object called EIC.
+# Column names must match. Output is a data.frame.
 
 
 eic <- function(MF, Files, ppm = 15) {
@@ -117,7 +117,7 @@ eic <- function(MF, Files, ppm = 15) {
       
 }
 
-# Loading data ----------------------------------------------------
+# Loading data 
 setwd(MainDir)
 Files <- read.csv("List of metabolomics files.csv")
 
@@ -127,16 +127,16 @@ load("Significant MFs linear regression 3 - 20150125.RData")
 Sig.3$Mode <- revalue(Sig.3$Mode, c("ESI+" = "Epos", 
                                     "ESI-" = "Eneg"))
 
-# Extracting EICs -------------------------------------------------
+# Extracting EICs 
 
 TopEICs <- eic(Sig.3, Files)
 
 
-# MFplot function ----------------------------------------
+# eicplot function ----------------------------------------
 
 # Input is 1 mass feature and the data.frame where all the EICs are.
 
-MFplot <- function(MF, EICs) {
+eicplot <- function(MF, EICs) {
       MF.df <- EICs[EICs$MassFeature == MF, ]
       
       Plot <<- ggplot(MF.df, aes(x = RT, y = Intensity, color = File)) +
@@ -151,13 +151,12 @@ MFplot <- function(MF, EICs) {
 }
 
 
-# Making graphs ---------------------------------------------------
-
+# Making graphs 
 setwd("Fragmentation results and data files/EnegP83 and EposU84 top MF plots")
 
 for (m in 1:nrow(Sig.3)){
       
-      MFplot(Sig.3$MassFeature[m], TopEICs)
+      eicplot(Sig.3$MassFeature[m], TopEICs)
 }
 
 setwd(MainDir)
@@ -172,17 +171,19 @@ setwd(MainDir)
 #       3. RT
 # The default is that matches must be within 15 ppm and 0.2 min, but you can
 # change the defaults when you call the function, eg. with defaults:
-# MassFeatureMatch(Data1, Data2)
+# mfmatch(Data1, Data2)
 # with other settings for PPM and RTRange:
-# MassFeatureMatch(Data1, Data2, PPM = 10, RTRange = 0.3)
+# mfmatch(Data1, Data2, PPM = 10, RTRange = 0.3)
 # Output is a data.frame of all mass features in both original data.frames
 # showing which ones match and what the m/z and RT differences are. The suffixes
 # on the columns should make it clear which values came from which of the 
 # original data.frames.
 
 
-MassFeatureMatch <- function(X, Y, PPM = 15, RTRange = 0.2){
+mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       require(plyr)
+      require(stringr)
+      
       DF.X <- X[, c("MassFeature", "mz", "RT")]
       DF.Y <- Y[, c("MassFeature", "mz", "RT")]
       
@@ -251,14 +252,18 @@ MassFeatureMatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       ColSuffix.X <- as.character(deparse(substitute(X)))
       ColSuffix.Y <- as.character(deparse(substitute(Y)))
       
-      names(Matches) <- sub("Y", ColSuffix.Y, names(Matches))
-      names(Matches) <- sub("X", ColSuffix.X, names(Matches))
+      OrigNames <- names(Matches)
+      
+      names(Matches)[str_detect(OrigNames, "Y$")] <- sub(
+            "Y$", ColSuffix.Y, OrigNames)[str_detect(OrigNames, "Y$")]
+      names(Matches)[str_detect(OrigNames, "X$")] <- sub(
+            "X$", ColSuffix.X, OrigNames)[str_detect(OrigNames, "X$")]
       
       return(Matches)
       
 }
 
-# Using MassFeatureMatch to compare MFs in SCOR MDZ EposU84 and in 
+# Using mfmatch to compare MFs in SCOR MDZ EposU84 and in 
 # CYP2D6 DEX EposU2.
 
 setwd("G:/Data/Metabolomics/Jessica/CYP2D6/mzData files 20131230/ESI+")
@@ -271,4 +276,264 @@ setwd("C:/Users/Laura/Documents/SCOR project/84 SCOR EposU")
 SCORMDZ.EposU84 <- read.csv("SCORMDZEposU84 peak table - RT above 2 min.csv")
 SCORMDZ.EposU84 <- SCORMDZ.EposU84[, c("MassFeature", "mz", "RT")]
 
-SCORMDZ.CYP2D6DEX.EposU <- MassFeatureMatch(SCORMDZ.EposU84, CYP2D6DEX.EposU2)
+SCORMDZ.CYP2D6DEX.EposU <- mfmatch(SCORMDZ.EposU84, CYP2D6DEX.EposU2)
+
+
+# Absolute levels of MFs ----------------------------------------------------
+# The point of running this function is to find which samples would be best to 
+# fragment for a given MF.
+# Input:
+#    1. MassFeature = the name of the mass feature you're interested in 
+#       fragmenting AS IT APPEARS in DF.
+#    2. DF = a data.frame from data that have been processed with xcms but NOT
+#       preprocessed. Must contain the following columns:
+#             a. "MassFeature" = unique identifier for all mass features, 
+#                including the mass feature listed in #1. 
+#             b. "RT" = the retention time in minutes, 
+#             c. "mz" = the m/z for that mass feature, and 
+#             d. sample columns with peak areas. 
+#    3. SampNames = names of the columns that contain absolute abundances
+#    4. n (optional) = number of top mass features you want. Defaults to 3.
+# Output: A data.frame with 2 columns: 1. the top n samples by abundance and 
+# 2. the abundance values.
+
+abslevelsMF <- function(MassFeature, DF, SampNames, n = 3){
+      require(tidyr)
+            
+      MF <- DF[DF$MassFeature == MassFeature, SampNames]
+      MF <- gather(MF, Sample, Abundance)
+      MF <- arrange(MF, -Abundance)
+      
+      return(MF[1:n, ])
+}
+
+
+setwd("C:/Users/Laura/Documents/SCOR project/84 SCOR EposU")
+EposU84.unproc <- read.csv("SCORMDZEposU84 peak table - RT above 2 min.csv")
+
+SampNames <- names(EposU84.unproc)[9:96]
+
+BestMF <- abslevelsMF("I114.0647R5.05", EposU84.unproc, SampNames, 5)
+
+
+# Relative levels of MFs ------------------------------------------------
+# The point of running this function is to find the relative levels of any
+# mass feature in preprocessed data.
+# Input:
+#    1. MassFeature = the name of the mass feature you're interested in 
+#       fragmenting AS IT APPEARS in DF.
+#    2. DF = a data.frame from data that have been preprocessed. Must contain
+#       the following columns:
+#             a. "MassFeature" = unique identifier for all mass features, 
+#                including the mass feature listed in #1. 
+#             b. "RT" = the retention time in minutes, 
+#             c. "mz" = the m/z for that mass feature, and 
+#             d. sample columns with peak areas. 
+#    3. SampNames = names of the columns that contain relative abundance data
+# Output: A long-format data.frame with 2 columns: 1. the sample, 2. the 
+# relative abundance for the given mass feature.
+
+rellevelsMF <- function(MassFeature, DF, SampNames){
+      require(tidyr)
+      
+      MF <- DF[DF$MassFeature == MassFeature, SampNames]
+      MF <- gather(MF, Sample, Abundance)
+      
+      return(MF)
+}
+
+
+EposU84.proc <- read.csv("EposU84 - preprocessed.csv", skip = 1)
+SampleColumns <- names(EposU84.proc)[4:90]
+
+I281.1498R5.72 <- rellevelsMF("I281.1498R5.72", EposU84.proc, SampleColumns)
+
+
+
+# Other ions ---------------------------------------------------------
+# 1st, loading xcms objects into the workspace and then running CAMERA on them.
+# Using SCOR MDZ EnegP83 data.
+
+library(xcms)
+library(CAMERA)
+
+setwd("F:/SCOR/20120202 SCOR plasma and urine ESI neg")
+load("SCORMDZEnegP83 workspace.RData")
+
+# Processing the data using CAMERA --------------------------
+# This function processes an xcmsSet object using CAMERA to look for 
+# other ions that could arise from the same mass feature. Input is an
+# xcmsSet object (xset) and the ionization mode as "positive" or "negative".
+# Output is a data.frame with all the original mass features and info on 
+# other ions potentially arising from the same compound.
+
+camera <- function(xset, Mode, PPM = 15) {
+      require(xcms)
+      require(CAMERA)
+      require(plyr)
+      require(stringr)
+      
+      # Create a CAMERA object
+      xsa <- xsAnnotate(xset)
+      
+      # Find the compound groups based on RT
+      xsa <- groupFWHM(xsa, perfwhm = 1.5)
+      
+      # Check that peaks in the same group correlate well enough to continue to be 
+      # included. Generate pseudospectra.
+      xsa <- groupCorr(xsa, cor_eic_th = 0.85, 
+                       pval=0.0001, calcIso=TRUE, calcCiS=TRUE)
+      
+      # Find the isotopes within each pseudospectrum.
+      xsa <- findIsotopes(xsa, maxcharge = 3, maxiso = 8, 
+                          ppm = PPM, mzabs = 0.015, intval = "maxo", 
+                          minfrac = 0.25)
+      
+      # Find the adducts within each pseudospectrum.
+      xsa <- findAdducts(xsa, ppm = PPM, mzabs = 0.015, 
+                         multiplier = 3, polarity = Mode, 
+                         rules = NULL, max_peaks = 100)
+      
+      # Make a table of the annotated peaks.
+      xset.annot <- getPeaklist(xsa)
+      
+      # Once again, remove reference ions from the peak table.
+      ifelse(Mode == "positive",
+             RefIons <- c(121.0509, 922.0098), # ESI+       
+             RefIons <- c(112.9856, 119.0363, 980.015)) # ESI-
+      
+      MF.refs <- list()
+      
+      for (i in 1:length(RefIons)){
+            MF.refs[[i]] <- which(xset.annot$mz < 
+                                        (RefIons[i] + PPM/1e6*RefIons[i]) &
+                                        xset.annot$mz > 
+                                        RefIons[i] - PPM/1e6*RefIons[i])
+      }
+      
+      xset.annot <- xset.annot[-unlist(MF.refs), ]
+      
+      # Making a column with the mass feature name.
+      xset.annot$MassFeature <- paste0("I", round((xset.annot$mz),
+                                                  digits = 4), "R", 
+                                       round(xset.annot$rt/60, 
+                                             digits = 2))
+      
+      # Making a column with the RT in minutes. Note that this is different
+      # from the column "rt", which is the RT in seconds. 
+      xset.annot$RT <- round(xset.annot$rt/60, digits = 2)
+      
+      # Using regex to extract meaningful info about isotopes and adducts.
+      
+      # Isotopes
+      # Make the column "isotopes" be character data instead of the default, factor.
+      # Replace empty cells with "NA".
+      xset.annot$isotopes <- as.character(xset.annot$isotopes)
+      xset.annot$isotopes[xset.annot$isotopes == ""] <- NA
+      
+      
+      # Take a subset of the data that is only the mass features that appear
+      # to have isotopes. 
+      Iso <- xset.annot[complete.cases(xset.annot$isotopes), 
+                        c("MassFeature", "mz", "RT", "isotopes", 
+                          "pcgroup")]
+      
+      
+      # Split the isotopes column into three pieces:
+      # 1. xset.annot$IsoGroup (numeric isotope group)
+      # 2. xset.annot$IonType (the isotope of that particular ion s/a "M" or "M+1")
+      # 3. xset.annot$Charge (the charge of the isotope)
+      IsoString <- str_split(Iso$isotopes, "\\]")
+      IsoGroup <- sapply(IsoString, function(x) x[[1]])
+      IsoGroup <- gsub("\\[", "", IsoGroup)
+      
+      IonType <- sapply(IsoString, function(x) x[[2]])
+      IonType <- gsub("\\[", "", IonType)
+      
+      Charge <- sapply(IsoString, function(x) x[[3]])
+      
+      IsoList <- data.frame(MassFeature = Iso$MassFeature,
+                            mz = Iso$mz,
+                            RT = Iso$RT, 
+                            pcgroup = Iso$pcgroup,
+                            IsoGroup = IsoGroup, 
+                            IonType = IonType, 
+                            Charge = Charge)
+      
+      IsoList$Othermz <- NA
+      for (i in 1:nrow(IsoList)){
+            
+            if (IsoList$IonType == "M") {
+                  IsoList$Othermz[i] <- IsoList$mz[i]
+            } else {
+                  n <- str_sub(IsoList$IonType[i], 3, 3)
+                  
+                  IsoList$Othermz[i] <- IsoList$mz[i] - n * 1.00866
+                  
+            }
+            
+      }
+      
+      # Adducts
+      # Make the column "adduct" be character data instead of the default, factor.
+      # Replace empty cells with "NA".
+      xset.annot$adduct <- as.character(xset.annot$adduct)
+      xset.annot$adduct[xset.annot$adduct == ""] <- NA
+      
+      # Take a subset of the data that is only the mass features that appear
+      # to have adduct. 
+      Adduct <- xset.annot[complete.cases(xset.annot$adduct), 
+                           c("MassFeature", "mz", "RT", "adduct", 
+                             "pcgroup")]
+      
+      # Split the adduct column into one list for every possible adduct with 
+      # each list having 4 pieces:
+      # 1. IonType = type of adduct, eg. M+Cl
+      # 2. mz.adduct = the m/z of that particular adduct
+      # 3. MassFeature 
+      # 4. pcgroup
+      
+      AdSplit <- str_split(Adduct$adduct, "\\[")
+      AdList <- list()
+      
+      for (i in 1:nrow(Adduct)){
+            
+            IonType <- c()
+            Charge <- c()
+            Othermz <- c()
+            
+            for (m in 2:length(AdSplit[[i]])){
+                  
+                  IonType[m-1] <- unlist(str_extract(AdSplit[[i]][m], ".*\\]"))
+                  IonType[m-1] <- gsub("\\]", "", IonType[m-1])
+                  
+                  Charge[m-1] <- unlist(str_extract(AdSplit[[i]][m], "\\].{1,2}"))
+                  Charge[m-1] <- str_trim(gsub("\\]", "", Charge[m-1]))
+                  
+                  Othermz[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
+            }
+            
+            AdList[[i]] <- data.frame(MassFeature = Adduct$MassFeature[i],
+                                      mz = Adduct$mz[i],
+                                      RT = Adduct$RT[i],
+                                      pcgroup = Adduct$pcgroup[i],
+                                      IonType = IonType,
+                                      Charge = Charge,
+                                      Othermz = Othermz)
+      }
+      
+      AdList <- rbind.fill(AdList)
+      OtherIons <- rbind.fill(AdList, IsoList)
+      
+      IonList <- list(xsa, xset.annot, OtherIons)
+      names(IonList) <- c(
+            paste0(as.character(deparse(substitute(xset))),".xsa"),
+            paste0(as.character(deparse(substitute(xset))),".annot"),
+            paste0(as.character(deparse(substitute(xset))),".otherions"))
+      
+      return(IonList)
+      
+}
+
+EnegP83.otherions <- camera(SCORMDZEnegP83, "negative")
+
