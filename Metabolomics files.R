@@ -302,8 +302,6 @@ Files <- rbind.fill(SCORFiles, SFNFiles, SCORFragmentFiles, MetopFiles,
 # Removing any missing files or directories. 
 Files <- Files[complete.cases(Files$File) & complete.cases(Files$Directory), ]
 
-names(Files)
-
 setwd(MainDir)
 write.csv(Files, "Metabolomics files.csv", row.names = FALSE)
 save(Files, file = "Metabolomics files.RData")
