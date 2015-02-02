@@ -299,6 +299,9 @@ MnPSFiles <- MnPSFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
 Files <- rbind.fill(SCORFiles, SFNFiles, SCORFragmentFiles, MetopFiles,
                     MnPSFiles, WBFiles)
 
+# Removing any missing files or directories. 
+Files <- Files[complete.cases(Files$File) & complete.cases(Files$Directory), ]
+
 names(Files)
 
 setwd(MainDir)
