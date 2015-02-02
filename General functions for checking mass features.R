@@ -41,33 +41,34 @@ setwd(MainDir)
 
 
 # eic function ============================================================
-# Making a function to export EICs given a data.frame (MF) listing:
-# 1. the mass feature (MassFeature)
-# 2. m/z (mz)
-# 3. RT in minutes (RT)
-# 4. ionization mode (Mode)
-# 5. and matrix (Matrix) 
-# and also given a data.frame (Files) listing:
-# 1. the files (File)
-# 2. directory (Dir)
-# 3. ionization mode (Mode)
-# 4. and matrix (Matrix)
+# This function extracts EIC data for use in plotting EICs. Input:
+#       1. MF.df = a data.frame with the following columns:
+#             a. the mass feature (MassFeature)
+#             b. m/z (mz)
+#             c. RT in minutes (RT)
+#             d. ionization mode (Mode)
+#             e. and matrix (Matrix) 
+#       2. Files = a data.frame with the following columns:
+#             a. the files (File)
+#             b. directory (Dir)
+#             c. ionization mode (Mode)
+#             d. and matrix (Matrix)
 # for each file you want to extract the EIC data from.
 # Column names must match. Output is a data.frame.
 
 
-eic <- function(MF, Files, ppm = 15) {
+eic <- function(MF.df, Files, ppm = 15) {
       
       require(plyr)
       OrigDir <- getwd()
-      MF$ModeMatrix <- paste(MF$Mode, MF$Matrix, sep = ".")
+      MF.df$ModeMatrix <- paste(MF.df$Mode, MF.df$Matrix, sep = ".")
       Files$ModeMatrix <- paste(Files$Mode, Files$Matrix, sep = ".")
       
       # Only keeping files with the mode and matrix actually present in 
       # the list of mass features of interest.
-      Files <- Files[Files$ModeMatrix %in% unique(MF$ModeMatrix), ]
+      Files <- Files[Files$ModeMatrix %in% unique(MF.df$ModeMatrix), ]
       
-      MF <- dlply(MF, c("Mode", "Matrix"))
+      MF.df <- dlply(MF.df, c("Mode", "Matrix"))
       EIC <- list()
       Files$Directory <- as.character(Files$Directory)
       
@@ -81,24 +82,24 @@ eic <- function(MF, Files, ppm = 15) {
             
             EIC[[i]] <- list()
             
-            for (m in 1:nrow(MF[[Dataset]])){
+            for (m in 1:nrow(MF.df[[Dataset]])){
                   
-                  MZRange <- cbind(MF[[Dataset]]$mz[m] - 
-                                         ppm*MF[[Dataset]]$mz[m]/1e6,
-                                   MF[[Dataset]]$mz[m] + 
-                                         ppm*MF[[Dataset]]$mz[m]/1e6)
+                  MZRange <- cbind(MF.df[[Dataset]]$mz[m] - 
+                                         ppm*MF.df[[Dataset]]$mz[m]/1e6,
+                                   MF.df[[Dataset]]$mz[m] + 
+                                         ppm*MF.df[[Dataset]]$mz[m]/1e6)
                   
-                  RTRange <- t(cbind(MF[[Dataset]]$RT[m]*60 + c(-30, 30)))
+                  RTRange <- t(cbind(MF.df[[Dataset]]$RT[m]*60 + c(-30, 30)))
                   EICdata <- getEIC(RawData, 
                                     mzrange = MZRange,
                                     rtrange = RTRange)
                   EIC[[i]][[m]] <- data.frame(EICdata@eic$xcmsRaw[[1]]) # names: "rt" and "intensity"
                   EIC[[i]][[m]]$Dataset <- Dataset
                   EIC[[i]][[m]]$File <- Files$File[i]
-                  EIC[[i]][[m]]$MassFeature <- MF[[Dataset]]$MassFeature[m]
-                  EIC[[i]][[m]]$RT.original <- MF[[Dataset]]$RT[m]
-                  EIC[[i]][[m]]$Matrix <- MF[[Dataset]]$Matrix[m]
-                  EIC[[i]][[m]]$Mode <- MF[[Dataset]]$Mode[m]
+                  EIC[[i]][[m]]$MassFeature <- MF.df[[Dataset]]$MassFeature[m]
+                  EIC[[i]][[m]]$RT.original <- MF.df[[Dataset]]$RT[m]
+                  EIC[[i]][[m]]$Matrix <- MF.df[[Dataset]]$Matrix[m]
+                  EIC[[i]][[m]]$Mode <- MF.df[[Dataset]]$Mode[m]
                   
             }
             
@@ -117,24 +118,28 @@ eic <- function(MF, Files, ppm = 15) {
       
 }
 
-# Loading data 
-setwd(MainDir)
-Files <- read.csv("List of metabolomics files.csv")
-
-load("Significant MFs linear regression 3 - 20150125.RData")
-# Changing Sig.3$Mode to match what I use elsewhere. Probably should change 
-# this in the metadata and/or regression scripts. 
-Sig.3$Mode <- revalue(Sig.3$Mode, c("ESI+" = "Epos", 
-                                    "ESI-" = "Eneg"))
-
-# Extracting EICs 
-
-TopEICs <- eic(Sig.3, Files)
-
+# # EXAMPLE
+# # Loading data 
+# setwd(MainDir)
+# Files <- read.csv("List of metabolomics files.csv")
+# 
+# load("Significant MFs linear regression 3 - 20150125.RData")
+# # Changing Sig.3$Mode to match what I use elsewhere. Probably should change 
+# # this in the metadata and/or regression scripts. 
+# Sig.3$Mode <- revalue(Sig.3$Mode, c("ESI+" = "Epos", 
+#                                     "ESI-" = "Eneg"))
+# 
+# # Extracting EICs 
+# 
+# TopEICs <- eic(Sig.3, Files)
 
 # eicplot function ----------------------------------------
-
-# Input is 1 mass feature and the data.frame where all the EICs are.
+# This function plots EICs of the mass feature of interest, facetted by 
+# project. It creates a new ggplot2 object, "Plot", that can be further modified.
+# Input: 
+#       1. MF = a character string listing the mass feature of interest
+#       2. EICs = a data.frame with all the EIC info already extracted; this 
+#          should be the output from the function "eic".
 
 eicplot <- function(MF, EICs) {
       MF.df <- EICs[EICs$MassFeature == MF, ]
@@ -151,15 +156,16 @@ eicplot <- function(MF, EICs) {
 }
 
 
-# Making graphs 
-setwd("Fragmentation results and data files/EnegP83 and EposU84 top MF plots")
-
-for (m in 1:nrow(Sig.3)){
-      
-      eicplot(Sig.3$MassFeature[m], TopEICs)
-}
-
-setwd(MainDir)
+# # EXAMPLE
+# # Making graphs 
+# setwd("Fragmentation results and data files/EnegP83 and EposU84 top MF plots")
+# 
+# for (m in 1:nrow(Sig.3)){
+#       
+#       eicplot(Sig.3$MassFeature[m], TopEICs)
+# }
+# 
+# setwd(MainDir)
 
 # Matching to other MFs --------------------------------------------------
 
@@ -263,21 +269,23 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       
 }
 
-# Using mfmatch to compare MFs in SCOR MDZ EposU84 and in 
-# CYP2D6 DEX EposU2.
 
-setwd("G:/Data/Metabolomics/Jessica/CYP2D6/mzData files 20131230/ESI+")
-CYP2D6DEX.EposU2 <- read.csv("CYP2D6 EposU 2 peak table - RT above 2 min.csv")
-CYP2D6DEX.EposU2 <- CYP2D6DEX.EposU2[, c("MassFeature", "mz", "RTmin")]
-CYP2D6DEX.EposU2 <- plyr::rename(CYP2D6DEX.EposU2, c("RTmin" = "RT"))
-
-
-setwd("C:/Users/Laura/Documents/SCOR project/84 SCOR EposU")
-SCORMDZ.EposU84 <- read.csv("SCORMDZEposU84 peak table - RT above 2 min.csv")
-SCORMDZ.EposU84 <- SCORMDZ.EposU84[, c("MassFeature", "mz", "RT")]
-
-SCORMDZ.CYP2D6DEX.EposU <- mfmatch(SCORMDZ.EposU84, CYP2D6DEX.EposU2)
-
+# # EXAMPLE
+# # Using mfmatch to compare MFs in SCOR MDZ EposU84 and in 
+# # CYP2D6 DEX EposU2.
+# 
+# setwd("G:/Data/Metabolomics/Jessica/CYP2D6/mzData files 20131230/ESI+")
+# CYP2D6DEX.EposU2 <- read.csv("CYP2D6 EposU 2 peak table - RT above 2 min.csv")
+# CYP2D6DEX.EposU2 <- CYP2D6DEX.EposU2[, c("MassFeature", "mz", "RTmin")]
+# CYP2D6DEX.EposU2 <- plyr::rename(CYP2D6DEX.EposU2, c("RTmin" = "RT"))
+# 
+# 
+# setwd("C:/Users/Laura/Documents/SCOR project/84 SCOR EposU")
+# SCORMDZ.EposU84 <- read.csv("SCORMDZEposU84 peak table - RT above 2 min.csv")
+# SCORMDZ.EposU84 <- SCORMDZ.EposU84[, c("MassFeature", "mz", "RT")]
+# 
+# SCORMDZ.CYP2D6DEX.EposU <- mfmatch(SCORMDZ.EposU84, CYP2D6DEX.EposU2)
+# 
 
 # Absolute levels of MFs ----------------------------------------------------
 # The point of running this function is to find which samples would be best to 
@@ -308,12 +316,13 @@ abslevelsMF <- function(MassFeature, DF, SampNames, n = 3){
 }
 
 
-setwd("C:/Users/Laura/Documents/SCOR project/84 SCOR EposU")
-EposU84.unproc <- read.csv("SCORMDZEposU84 peak table - RT above 2 min.csv")
-
-SampNames <- names(EposU84.unproc)[9:96]
-
-BestMF <- abslevelsMF("I114.0647R5.05", EposU84.unproc, SampNames, 5)
+# # EXAMPLE
+# setwd("C:/Users/Laura/Documents/SCOR project/84 SCOR EposU")
+# EposU84.unproc <- read.csv("SCORMDZEposU84 peak table - RT above 2 min.csv")
+# 
+# SampNames <- names(EposU84.unproc)[9:96]
+# 
+# BestMF <- abslevelsMF("I114.0647R5.05", EposU84.unproc, SampNames, 5)
 
 
 # Relative levels of MFs ------------------------------------------------
@@ -343,24 +352,14 @@ rellevelsMF <- function(MassFeature, DF, SampNames){
 }
 
 
-EposU84.proc <- read.csv("EposU84 - preprocessed.csv", skip = 1)
-SampleColumns <- names(EposU84.proc)[4:90]
+# # EXAMPLE
+# EposU84.proc <- read.csv("EposU84 - preprocessed.csv", skip = 1)
+# SampleColumns <- names(EposU84.proc)[4:90]
+# 
+# I281.1498R5.72 <- rellevelsMF("I281.1498R5.72", EposU84.proc, SampleColumns)
 
-I281.1498R5.72 <- rellevelsMF("I281.1498R5.72", EposU84.proc, SampleColumns)
 
-
-
-# Other ions ---------------------------------------------------------
-# 1st, loading xcms objects into the workspace and then running CAMERA on them.
-# Using SCOR MDZ EnegP83 data.
-
-library(xcms)
-library(CAMERA)
-
-setwd("F:/SCOR/20120202 SCOR plasma and urine ESI neg")
-load("SCORMDZEnegP83 workspace.RData")
-
-# Processing the data using CAMERA --------------------------
+# Processing xcms data using CAMERA --------------------------
 # This function processes an xcmsSet object using CAMERA to look for 
 # other ions that could arise from the same mass feature. Input is an
 # xcmsSet object (xset) and the ionization mode as "positive" or "negative".
@@ -535,5 +534,96 @@ camera <- function(xset, Mode, PPM = 15) {
       
 }
 
-EnegP83.otherions <- camera(SCORMDZEnegP83, "negative")
+
+# # EXAMPLE
+# setwd("F:/SCOR/20120202 SCOR plasma and urine ESI neg")
+# load("SCORMDZEnegP83 workspace.RData")
+# 
+# EnegP83.otherions <- camera(SCORMDZEnegP83, "negative")
+# 
+# SCORMDZEnegP83.annot <- EnegP83.otherions[["SCORMDZEnegP83.annot"]]
+# OtherIons <- EnegP83.otherions[["SCORMDZEnegP83.otherions"]]
+
+
+# EICs of all ions --------------------------------------------------
+# This function gathers into 1 data.frame the  EICs of the originally 
+# identified mass feature plus all the possible ions CAMERA identified 
+# as being associated with that mass feature. It uses the functions eic 
+# and eicplot to do this.
+# Input:
+#       1. MF.df = a 1-row data.frame with the following columns:
+#             a. the mass feature (MassFeature)
+#             b. m/z (mz)
+#             c. RT in minutes (RT)
+#             d. ionization mode (Mode)
+#             e. and matrix (Matrix) 
+#       2. Files = a data.frame with the following columns:
+#             a. the files (File)
+#             b. directory (Dir)
+#             c. ionization mode (Mode)
+#             d. and matrix (Matrix)
+#       3. CameraList = the list output from running the camera function
+
+allions <- function(MF.df, Files, CameraList){
+      
+      require(plyr)
+      require(dplyr)
+      
+      OtherIonsIndex <- which(str_detect(names(CameraList), "otherions$"))
+      Other.df <- CameraList[[OtherIonsIndex]]
+      Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
+      Other.df$mz <- Other.df$Othermz
+      Other.df$MassFeature <- paste(Other.df$MassFeature, Other.df$IonType,
+                                    Other.df$mz)
+      
+      MF.df <- rbind.fill(MF.df, 
+                          Other.df[, c("MassFeature", "mz", "RT")])
+      MF.df$mz <- as.numeric(MF.df$mz)
+      MF.df$Mode <- MF.df$Mode[1]
+      MF.df$Matrix <- MF.df$Matrix[1]
+      
+      EICs <- eic(MF.df, Files)
+      EICs <- join(EICs, Other.df[, c("MassFeature", "mz", "IonType", 
+                                      "Charge", "IsoGroup")], 
+                   by = c("MassFeature"))
+      return(EICs)
+}
+
+
+# # EXAMPLE
+# MF.df <- SCORMDZEnegP83.after2[SCORMDZEnegP83.after2$MassFeature == 
+#                                      "I145.0677R5.63", 
+#                                c("MassFeature", "mz", "RT")]
+# MF.df$Mode <- "Eneg"
+# MF.df$Matrix <- "plasma"
+# 
+# CameraList <- EnegP83.otherions
+# 
+# EICs.all <- allions(MF.df, Files, EnegP83.otherions)
+
+
+# allionplot function ----------------------------------------
+# This function plots EICs of the mass feature of interest, facetted by 
+# other ions. It creates a new ggplot2 object, "Plot.allion", that can be
+# further modified.
+# Input: the data.frame output from the function "allion".
+
+allionplot <- function(allion.df) {
+      
+      require(ggplot2)
+      
+      Plot.allion <<- ggplot(allion.df, aes(x = RT, y = Intensity, 
+                                            color = File)) +
+            geom_line() + ggtitle(paste(allion.df$Mode[1], 
+                                        allion.df$Matrix[1], 
+                                        allion.df$MassFeature[1])) +
+            xlab("RT (min)") +
+            geom_vline(data = allion.df, aes(xintercept = RT.original),
+                       linetype = "dashed", size = 0.5, color = "gray50") +
+            theme(legend.position = "none") +
+            facet_grid(MassFeature ~ Project, scales = "free")
+      Plot.allion
+      ggsave(paste(allion.df$Mode[1], allion.df$Matrix[1], 
+                   allion.df$MassFeature[1], "- all ions.png")))
+}
 
