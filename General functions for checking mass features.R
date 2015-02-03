@@ -10,8 +10,6 @@ library(tidyr)
 library(plyr)
 library(dplyr)
 library(lubridate)
-library(XLConnect)
-library(reshape2)
 
 ThemeLaura <- function (base_size = 12, base_family = "") {
       theme_gray(base_size = base_size, base_family = base_family) %+replace% 
@@ -467,14 +465,15 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                             IsoGroup = IsoGroup, 
                             IonType = IonType, 
                             Charge = Charge)
+      IsoList$IonType <- as.character(IsoList$IonType)
       
       IsoList$Othermz <- NA
       for (i in 1:nrow(IsoList)){
             
-            if (IsoList$IonType == "M") {
+            if (IsoList$IonType[i] == "M") {
                   IsoList$Othermz[i] <- IsoList$mz[i]
             } else {
-                  n <- str_sub(IsoList$IonType[i], 3, 3)
+                  n <- as.numeric(str_sub(IsoList$IonType[i], 3, 3))
                   
                   IsoList$Othermz[i] <- IsoList$mz[i] - n * 1.00866
                   
@@ -527,10 +526,12 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                                       pcgroup = Adduct$pcgroup[i],
                                       IonType = IonType,
                                       Charge = Charge,
-                                      Othermz = Othermz)
+                                      Othermz = as.numeric(Othermz))
       }
       
       AdList <- rbind.fill(AdList)
+      
+      
       OtherIons <- rbind.fill(AdList, IsoList)
       
       IonList <- list(xsa, xset.annot, OtherIons)
@@ -581,9 +582,9 @@ allions <- function(MF.df, Files, CameraList){
       OtherIonsIndex <- which(str_detect(names(CameraList), "otherions$"))
       Other.df <- CameraList[[OtherIonsIndex]]
       Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
-      Other.df$mz <- Other.df$Othermz
+      Other.df$mz <- as.numeric(Other.df$Othermz)
       Other.df$MassFeature <- paste(Other.df$MassFeature, Other.df$IonType,
-                                    Other.df$mz)
+                                    round(Other.df$mz, 4))
       
       MF.df <- rbind.fill(MF.df, 
                           Other.df[, c("MassFeature", "mz", "RT")])
@@ -630,7 +631,7 @@ allionplot <- function(allion.df) {
             geom_vline(data = allion.df, aes(xintercept = RT.original),
                        linetype = "dashed", size = 0.5, color = "gray50") +
             theme(legend.position = "none") +
-            facet_grid(MassFeature ~ Project, scales = "free")
+            facet_grid(IonType ~ Project, scales = "free")
       Plot.allion
       ggsave(paste(allion.df$Mode[1], allion.df$Matrix[1], 
                    allion.df$MassFeature[1], "- all ions.png"))
