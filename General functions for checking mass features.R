@@ -427,6 +427,10 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       # from the column "rt", which is the RT in seconds. 
       xset.annot$RT <- round(xset.annot$rt/60, digits = 2)
       
+      # Retaining only columns of interest in a logical order
+      xset.annot <- xset.annot[, c("MassFeature", "mz", "RT", "isotopes",
+                                   "adduct", "pcgroup")]
+      
       # Using regex to extract meaningful info about isotopes and adducts.
       
       # Isotopes
