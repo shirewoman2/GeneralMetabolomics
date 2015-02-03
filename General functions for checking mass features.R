@@ -106,6 +106,7 @@ eic <- function(MF.df, Files, ppm = 15) {
             EIC[[i]] <- rbind.fill(EIC[[i]])
             EIC[[i]]$Project <- Files$Project[i]
             
+            print(i)
       }
       
       EIC <- rbind.fill(EIC)
@@ -141,7 +142,7 @@ eic <- function(MF.df, Files, ppm = 15) {
 #       2. EICs = a data.frame with all the EIC info already extracted; this 
 #          should be the output from the function "eic".
 
-eicplot <- function(MF, EICs) {
+eicplot <- function(MF, EICs, Height = 8, Width = 8) {
       MF.df <- EICs[EICs$MassFeature == MF, ]
       
       Plot <<- ggplot(MF.df, aes(x = RT, y = Intensity, color = File)) +
@@ -152,7 +153,8 @@ eicplot <- function(MF, EICs) {
             theme(legend.position = "none") +
             facet_wrap(~ Project, scales = "free")
       Plot
-      ggsave(paste(MF.df$Mode[1], MF.df$Matrix[1], paste0(MF, ".png")))
+      ggsave(paste(MF.df$Mode[1], MF.df$Matrix[1], paste0(MF, ".png")),
+             height = Height, width = Width)
 }
 
 
@@ -363,10 +365,13 @@ rellevelsMF <- function(MassFeature, DF, SampNames){
 # This function processes an xcmsSet object using CAMERA to look for 
 # other ions that could arise from the same mass feature. Input is an
 # xcmsSet object (xset) and the ionization mode as "positive" or "negative".
-# Output is a data.frame with all the original mass features and info on 
-# other ions potentially arising from the same compound.
+# Output is a named list containing:
+#       1. the CAMERA object (suffix is .xsa)
+#       2. a data.frame of the output from CAMERA (.annot)
+#       3. a data.frame of other potential ions arising from the same compound as
+#          the original input mass feature (.otherions)
 
-camera <- function(xset, Mode, PPM = 15) {
+camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       require(xcms)
       require(CAMERA)
       require(plyr)
@@ -381,7 +386,7 @@ camera <- function(xset, Mode, PPM = 15) {
       # Check that peaks in the same group correlate well enough to continue to be 
       # included. Generate pseudospectra.
       xsa <- groupCorr(xsa, cor_eic_th = 0.85, 
-                       pval=0.0001, calcIso=TRUE, calcCiS=TRUE)
+                       pval=PVal, calcIso=TRUE, calcCiS=TRUE)
       
       # Find the isotopes within each pseudospectrum.
       xsa <- findIsotopes(xsa, maxcharge = 3, maxiso = 8, 
@@ -624,6 +629,6 @@ allionplot <- function(allion.df) {
             facet_grid(MassFeature ~ Project, scales = "free")
       Plot.allion
       ggsave(paste(allion.df$Mode[1], allion.df$Matrix[1], 
-                   allion.df$MassFeature[1], "- all ions.png")))
+                   allion.df$MassFeature[1], "- all ions.png"))
 }
 
