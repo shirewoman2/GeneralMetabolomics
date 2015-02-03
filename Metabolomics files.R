@@ -89,6 +89,8 @@ SCORFiles$Directory[SCORFiles$Matrix == "urine" &
 SCORFiles$Directory[SCORFiles$Matrix == "urine" & 
                           SCORFiles$Mode == "Eneg"] <- SCORDir[5]
 
+SCORFiles$Project <- "SCOR MDZ"
+
 rm(SCORmeta, SCORDir)
 
 
@@ -146,7 +148,7 @@ SFNSamples$Project <- "SFN"
 SFNSamples <- SFNSamples[complete.cases(SFNSamples$Directory), ]
 
 SFNFiles <- SFNSamples[, c("SampleID", "Subject", "TimePoint", "Matrix", 
-                           "Mode", "Date", "File", "Directory")]
+                           "Mode", "Date", "File", "Directory", "Project")]
 
 rm(AllSFNFiles, SFNEnegP, SFNSamples, DirFiles, Directories, Directories1, 
    Directories2, d)
@@ -180,6 +182,10 @@ SCOR20150103$Project <- "SCOR MDZ fragment"
 SCOR20150103$Directory <- "F:/SCOR/20150103 SCOR MDZ fragmentation"
 SCOR20150103$Date <- ymd("20150103")
 SCOR20150103 <- SCOR20150103[SCOR20150103$MSn == "MS", ]
+
+# Removing bad injection
+SCOR20150103 <- SCOR20150103[SCOR20150103$File != 
+                                   "20150103 SCOR MDZ EposP SFN 2214 310 2", ]
 
 
 # 1/26/15
@@ -302,6 +308,16 @@ Files <- rbind.fill(SCORFiles, SFNFiles, SCORFragmentFiles, MetopFiles,
 # Removing any missing files or directories. 
 Files <- Files[complete.cases(Files$File) & complete.cases(Files$Directory), ]
 
+# Removing trailing or leading white spaces from the file names. They sometimes
+# got in there b/c of the way I had set up my Excel files to make the file name.
+Files$File <- str_trim(Files$File)
+
+
+# Checking numbers
+ddply(Files, c("Mode", "Matrix"), function(x) nrow(x))
+
+
+# Saving the data ------------------------------------------
 setwd(MainDir)
 write.csv(Files, "Metabolomics files.csv", row.names = FALSE)
 save(Files, file = "Metabolomics files.RData")
