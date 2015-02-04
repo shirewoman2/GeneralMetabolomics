@@ -66,7 +66,7 @@ eic <- function(MF.df, Files, ppm = 15) {
       # the list of mass features of interest.
       Files <- Files[Files$ModeMatrix %in% unique(MF.df$ModeMatrix), ]
       
-      MF.df <- dlply(MF.df, c("Mode", "Matrix"))
+      MF.list <- dlply(MF.df, c("Mode", "Matrix"))
       EIC <- list()
       Files$Directory <- as.character(Files$Directory)
       
@@ -80,24 +80,28 @@ eic <- function(MF.df, Files, ppm = 15) {
             
             EIC[[i]] <- list()
             
-            for (m in 1:nrow(MF.df[[Dataset]])){
+            for (m in 1:nrow(MF.list[[Dataset]])){
                   
-                  MZRange <- cbind(MF.df[[Dataset]]$mz[m] - 
-                                         ppm*MF.df[[Dataset]]$mz[m]/1e6,
-                                   MF.df[[Dataset]]$mz[m] + 
-                                         ppm*MF.df[[Dataset]]$mz[m]/1e6)
+                  MZRange <- cbind(MF.list[[Dataset]]$mz[m] - 
+                                         ppm*MF.list[[Dataset]]$mz[m]/1e6,
+                                   MF.list[[Dataset]]$mz[m] + 
+                                         ppm*MF.list[[Dataset]]$mz[m]/1e6)
                   
-                  RTRange <- t(cbind(MF.df[[Dataset]]$RT[m]*60 + c(-30, 30)))
+                  RTRange <- t(cbind(MF.list[[Dataset]]$RT[m]*60 + c(-30, 30)))
                   EICdata <- getEIC(RawData, 
                                     mzrange = MZRange,
                                     rtrange = RTRange)
                   EIC[[i]][[m]] <- data.frame(EICdata@eic$xcmsRaw[[1]]) # names: "rt" and "intensity"
                   EIC[[i]][[m]]$Dataset <- Dataset
                   EIC[[i]][[m]]$File <- Files$File[i]
-                  EIC[[i]][[m]]$MassFeature <- MF.df[[Dataset]]$MassFeature[m]
-                  EIC[[i]][[m]]$RT.original <- MF.df[[Dataset]]$RT[m]
-                  EIC[[i]][[m]]$Matrix <- MF.df[[Dataset]]$Matrix[m]
-                  EIC[[i]][[m]]$Mode <- MF.df[[Dataset]]$Mode[m]
+                  EIC[[i]][[m]]$MassFeature <- MF.list[[Dataset]]$MassFeature[m]
+                  EIC[[i]][[m]]$RT.original <- MF.list[[Dataset]]$RT[m]
+                  EIC[[i]][[m]]$Matrix <- MF.list[[Dataset]]$Matrix[m]
+                  EIC[[i]][[m]]$Mode <- MF.list[[Dataset]]$Mode[m]
+                  
+                  if ("MassFeature.ion" %in% names(MF.df)) {
+                        EIC[[i]][[m]]$MassFeature.ion <- MF.df$MassFeature.ion[m]
+                  }
                   
             }
             
@@ -307,7 +311,7 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
 
 abslevelsMF <- function(MassFeature, DF, SampNames, n = 3){
       require(tidyr)
-            
+      
       MF <- DF[DF$MassFeature == MassFeature, SampNames]
       MF <- gather(MF, Sample, Abundance)
       MF <- arrange(MF, -Abundance)
@@ -583,19 +587,32 @@ allions <- function(MF.df, Files, CameraList){
       Other.df <- CameraList[[OtherIonsIndex]]
       Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
       Other.df$mz <- as.numeric(Other.df$Othermz)
-      Other.df$MassFeature <- paste(Other.df$MassFeature, Other.df$IonType,
-                                    round(Other.df$mz, 4))
       
-      MF.df <- rbind.fill(MF.df, 
-                          Other.df[, c("MassFeature", "mz", "RT")])
-      MF.df$mz <- as.numeric(MF.df$mz)
-      MF.df$Mode <- MF.df$Mode[1]
-      MF.df$Matrix <- MF.df$Matrix[1]
+      if (nrow(Other.df) > 0){
+            
+            for (m in 1:nrow(Other.df)){
+                  if (Other.df$Charge[m] == "-" | Other.df$Charge[m] == "+") {
+                        Other.df$MassFeature.ion[m] <- paste("M if orig is", 
+                                                             Other.df$IonType[m])
+                  } else {
+                        Other.df$MassFeature.ion[m] <- 
+                              paste("ion with charge =", Other.df$Charge[m], 
+                                    "\n if orig is", Other.df$IonType[m])
+                  }
+            }
+      }
       
-      EICs <- eic(MF.df, Files)
+      MF.df$MassFeature.ion <- "original"
+      Other.df <- rbind.fill(Other.df, 
+                             MF.df[, c("MassFeature", "mz", "RT", "MassFeature.ion")])
+      
+      Other.df$Mode <- MF.df$Mode[1]
+      Other.df$Matrix <- MF.df$Matrix[1]
+      
+      EICs <- eic(Other.df, Files)
       EICs <- join(EICs, Other.df[, c("MassFeature", "mz", "IonType", 
-                                      "Charge", "IsoGroup")], 
-                   by = c("MassFeature"))
+                                      "Charge", "IsoGroup", "MassFeature.ion")], 
+                   by = c("MassFeature", "MassFeature.ion"))
       return(EICs)
 }
 
@@ -631,7 +648,7 @@ allionplot <- function(allion.df) {
             geom_vline(data = allion.df, aes(xintercept = RT.original),
                        linetype = "dashed", size = 0.5, color = "gray50") +
             theme(legend.position = "none") +
-            facet_grid(IonType ~ Project, scales = "free")
+            facet_grid(MassFeature.ion ~ Project, scales = "free")
       Plot.allion
       ggsave(paste(allion.df$Mode[1], allion.df$Matrix[1], 
                    allion.df$MassFeature[1], "- all ions.png"))
