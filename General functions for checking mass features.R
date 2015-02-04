@@ -588,6 +588,9 @@ allions <- function(MF.df, Files, CameraList){
       Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
       Other.df$mz <- as.numeric(Other.df$Othermz)
       
+      # No need to plot ions if the main ion is just M. Removing those.
+      Other.df <- Other.df[Other.df$IonType != "M", ]
+      
       if (nrow(Other.df) > 0){
             
             for (m in 1:nrow(Other.df)){
@@ -602,7 +605,7 @@ allions <- function(MF.df, Files, CameraList){
             }
       }
       
-      MF.df$MassFeature.ion <- "original"
+      MF.df$MassFeature.ion <- "originally detected ion"
       Other.df <- rbind.fill(Other.df, 
                              MF.df[, c("MassFeature", "mz", "RT", "MassFeature.ion")])
       
@@ -635,7 +638,7 @@ allions <- function(MF.df, Files, CameraList){
 # further modified.
 # Input: the data.frame output from the function "allion".
 
-allionplot <- function(allion.df) {
+allionplot <- function(allion.df, Height = 8, Width = 8) {
       
       require(ggplot2)
       
@@ -651,6 +654,7 @@ allionplot <- function(allion.df) {
             facet_grid(MassFeature.ion ~ Project, scales = "free")
       Plot.allion
       ggsave(paste(allion.df$Mode[1], allion.df$Matrix[1], 
-                   allion.df$MassFeature[1], "- all ions.png"))
+                   allion.df$MassFeature[1], "- all ions.png"),
+             height = Height, width = Width)
 }
 
