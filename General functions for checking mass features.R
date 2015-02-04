@@ -55,7 +55,7 @@ setwd(MainDir)
 # Column names must match. Output is a data.frame.
 
 
-eic <- function(MF.df, Files, ppm = 15) {
+eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
       
       require(plyr)
       OrigDir <- getwd()
@@ -108,7 +108,7 @@ eic <- function(MF.df, Files, ppm = 15) {
             EIC[[i]] <- rbind.fill(EIC[[i]])
             EIC[[i]]$Project <- Files$Project[i]
             
-            print(i)
+            if (PrintProgress == TRUE) { print(i) }
       }
       
       EIC <- rbind.fill(EIC)
