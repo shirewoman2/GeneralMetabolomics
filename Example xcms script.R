@@ -65,6 +65,7 @@ IonizationMode <- "negative" # Change to "positive" or "negative" as appropriate
 
 library(plyr)
 library(ggplot2)
+library(gridExtra)
 library(xcms)
 library(CAMERA)
 library(XLConnect)
@@ -306,8 +307,11 @@ DataEnegP.filter <- DataEnegP.after2[DataEnegP.after2$Count >=
 write.csv(DataEnegP.filter, 
           "DataEnegP peak table - mass features must be present in at least 25% of all samples.csv")
 
-setwd(RawDataDir)
+save(DataEnegP.after2, DataEnegP.allpeaks, DataEnegP.filter, DataEnegP.noref,
+     DataEnegP.unfilled, file = "DataEnegP - all main dataframes.RData")
+save(DataEnegP.filter, file = "DataEnegP - filtered dataframe only.RData")
 
+setwd(RawDataDir)
 tPeakTable.final <- Sys.time()
 tPeakTable <- as.numeric(difftime(tPeakTable.final, tPeakTable.init, 
                                   units="mins"))
@@ -318,7 +322,7 @@ tQC.init <- Sys.time()
 
 # Selecting some random mass features and samples to scrutinize and then
 # saving the names of those mass features and samples.
-MFs <- as.numeric(sample(row.names(DataEnegP.filter), 30))
+MFs <- as.numeric(sample(1:nrow(DataEnegP.filter), 30))
 RandSamp <- as.numeric(sample(length(Samples), 10))
 write.csv(MFs, paste(Sys.Date(), 
                      "DataEnegP randomly selected mass features.csv"))
@@ -346,8 +350,6 @@ MyColors <- c(ColRainbow(length(RandSamp) - 1), "red")
 xset.raw <- xcmsRaw(Samples[RandSamp[10]], profstep = 0.01, profmethod = "bin")
 
 setwd(MainDir)
-# pdf("DataEnegP peak picking and alignment quality check.pdf", 8.5, 11)
-
 # 1st column shows the uncorrected EICs.
 # 2nd column shows the RT-corrected EICs.
 # 3rd column shows the m/z vs. RT for the last sample in RandSamp. A dashed 
@@ -357,12 +359,12 @@ setwd(MainDir)
 
 Plots <- list()
 
-# par(mfrow=c(4,3), mar=c(3,3,3,0.5))
-
 EICuncor <- list()
 EICcor <- list()
 MSraw <- list()
 MFparam <- list()
+
+EICplot <- list()
 
 for(i in 1:30){
       m <- MFs[i]
@@ -391,58 +393,73 @@ for(i in 1:30){
       mzRange <- c(mz - 0.02, mz + 0.02)
       
       MSraw[[i]] <- data.frame(plotRaw(xset.raw, mzrange = mzRange, 
-                                  rtrange = RTRange, log = FALSE))
+                                       rtrange = RTRange, log = FALSE))
       MFparam[[i]] <- data.frame(MassFeature = DataEnegP.allpeaks$MassFeature[m],
                                  mz = mz,
                                  RT = RT/60,
                                  mzRange.rect.low = mz - mz * 7.5/1e6,
                                  mzRange.rect.high = mz * 7.5/1e6 + mz)
+
+      EICplot[[3*i-2]] <- ggplot(EICuncor[[i]], aes(x = rt, y = intensity, 
+                                                    color = Sample)) +
+            geom_line() + 
+            scale_color_manual(values = MyColors) +
+            ggtitle("Uncorrected") +
+            ggplot2::annotate("text", x = -Inf, y = Inf, vjust = 1.5,
+                              hjust = -0.05, size = 3,
+                              label = DataEnegP.filter$MassFeature[MFs[i]]) +
+            theme(legend.position = "none", 
+                  text = element_text(size = 8),
+                  axis.text.y = element_text(angle = 90, hjust = 0.5))
+      
+      EICplot[[3*i-1]] <- ggplot(EICcor[[i]], aes(x = rt, y = intensity, 
+                                                  color = Sample)) +
+            geom_line() + 
+            scale_color_manual(values = MyColors) +
+            ggtitle("Corrected") +
+            ggplot2::annotate("text", x = -Inf, y = Inf, vjust = 1.5,
+                              hjust = -0.05, size = 3,
+                              label = DataEnegP.filter$MassFeature[MFs[i]]) +
+            theme(legend.position = "none", 
+                  text = element_text(size = 8),
+                  axis.text.y = element_text(angle = 90, hjust = 0.5))
+      
+      
+      EICplot[[3*i]]<- ggplot(MSraw[[i]], aes(x = time/60, y = mz, color = intensity)) +
+            geom_point() + xlab("RT (min)") + ylab("m/z") +
+            ggplot2::annotate("rect", xmin = min(MSraw[[i]]$time/60), 
+                              xmax = max(MSraw[[i]]$time/60), 
+                              ymin = MFparam[[i]]$mzRange.rect.low, 
+                              ymax = MFparam[[i]]$mzRange.rect.high,
+                              alpha = 0.1) +
+            geom_vline(xintercept = MFparam[[i]]$RT, linetype="dashed") +
+            geom_hline(yintercept = MFparam[[i]]$mz, linetype = "dashed") +
+            theme(legend.position = "none", 
+                  text = element_text(size = 8),
+                  axis.text.y = element_text(angle = 90, hjust = 0.5, 
+                                             size = 6))
+      
+      
+      
+      
+      
 }
 
-setwd(MainDir)
-save(MFs, EICuncor, EICcor, MSraw, MFparam, DataEnegP.filter, 
-     file = "DataEnegP_QC.RData")
-
-knit2pdf()
-
-
-
-# 
-# 
-# multiplot(plotlist = c(Plots.uncor[[1]], Plots.cor[[1]], Spectra[[1]],
-#                        Plots.uncor[[2]], Plots.cor[[2]], Spectra[[2]],
-#                        Plots.uncor[[3]], Plots.cor[[3]], Spectra[[3]],
-#                        Plots.uncor[[4]], Plots.cor[[4]], Spectra[[4]],
-#                        Plots.uncor[[5]], Plots.cor[[5]], Spectra[[5]],
-#                        Plots.uncor[[6]], Plots.cor[[6]], Spectra[[6]],
-#                        Plots.uncor[[7]], Plots.cor[[7]], Spectra[[7]],
-#                        Plots.uncor[[8]], Plots.cor[[8]], Spectra[[8]],
-#                        Plots.uncor[[9]], Plots.cor[[9]], Spectra[[9]],
-#                        Plots.uncor[[10]], Plots.cor[[10]], Spectra[[10]],
-#                        Plots.uncor[[11]], Plots.cor[[11]], Spectra[[11]],
-#                        Plots.uncor[[12]], Plots.cor[[12]], Spectra[[12]],
-#                        cols=3)
-
-dev.off()
+p <- do.call(marrangeGrob, c(EICplot, ncol = 3, nrow = 4))
+ggsave("DataEnegP quality check.pdf", p, width = 8.5, height = 11)
 
 setwd(RawDataDir)
-
 tQC.final <- Sys.time()
 tQC <- as.numeric(difftime(tQC.final, tQC.init, units = "mins"))
 write.csv(tQC, "tQC.csv")
 
 # Calculating processing times for each step --------------------------------------------
-tpick <- read.csv("tpick.csv")
-tgroup <- read.csv("tgroup.csv")
-tretcor <- read.csv("tretcor.csv")
-tgroup2 <- read.csv("tgroup2.csv")
-tfillPeaks <- read.csv("tfillPeaks.csv")
-tPeakTable <- read.csv("tPeakTable.csv")
-tQC <- read.csv("tQC.csv")
+setwd(RawDataDir)
 
 # Make a data.frame with all the times that each step required. 
 # Units for Times are in minutes.
-Times <- rbind(tpick, tgroup, tretcor, tgroup2, tfillPeaks, tPeakTable, tQC)
+Times <- data.frame(rbind(tpick, tgroup, tretcor, tgroup2, tfillPeaks, 
+                          tPeakTable, tQC))
 Times$Step <- c("pick peaks", # tpick
                 "group 1", # tgroup
                 "retcor", # tretcor
@@ -450,8 +467,8 @@ Times$Step <- c("pick peaks", # tpick
                 "fill peaks", # tfillPeaks
                 "peak table", # tPeakTable
                 "QC") # tQC
-
-Times <- rename(Times, c("x" = "Duration"))
+names(Times) <- c("Duration", "Step")
+row.names(Times) <- 1:nrow(Times)
 
 # Calculate the total time in hours. 
 TotalTime <- c("Total time in hours", format(sum(Times$Duration)/60, digits=2))
@@ -464,7 +481,8 @@ write.csv(rbind(Times, TotalTime), "DataEnegP processing times.csv", row.names=F
 Times$Step <- factor(Times$Step, levels=Times$Step)
 
 # Make a bar graph showing how long each step took.
-ggplot(Times, aes(x=Step, y=Duration, fill=Step)) + geom_bar(stat="identity") +
+ggplot(Times, aes(x=Step, y=Duration, fill=Step)) + 
+      geom_bar(stat="identity") +
       ylab("Duration (min)") + ggtitle("Processing times for DataEnegP") +
       guides(fill=FALSE)
 ggsave("DataEnegP processing times bar plot.png", height=6, width=6.5, dpi=300)
@@ -506,6 +524,6 @@ ggsave("DataEnegP bar chart of numbers of mass features at each step.png")
 # Saving final workspace ------------------------------
 setwd(RawDataDir)
 save(DataEnegP, file = "DataEnegP xcmsSet object.RData")
-save.image("DataEnegP workspace.RData") # This saves EVERYTHING that is currently
+# save.image("DataEnegP workspace.RData") # This saves EVERYTHING that is currently
 # in your workspace, which is a pretty huge file. Skip this step if you don't 
 # think you'll need that. 
