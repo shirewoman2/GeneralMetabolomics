@@ -76,6 +76,19 @@ RawDataDir <- "D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics/Whole blo
 
 MainDir <- paste0(RawDataDir, "/WBEnegP4")
 
+# Using an Excel file with metadata to select which samples I want to process.
+setwd(RawDataDir)
+wb <- loadWorkbook("20141014 Whole blood workup worklist.xlsx")
+Meta <- readWorksheet(wb, "Sheet2")
+Meta$File <- paste0(Meta$File, ".mzdata.xml")
+Samples <- Meta$File[file.exists(Meta$File) & Meta$Mode == "ESI-"]
+
+
+# Getting the names of the output data.frames' sample columns
+SampCol <- sub("mzdata.xml", "mzdata", make.names(Samples))
+
+
+# General functions ----------------------------------------------
 ThemeLaura <- function (base_size = 12, base_family = "") {
       theme_gray(base_size = base_size, base_family = base_family) %+replace% 
             theme(
@@ -97,54 +110,8 @@ ThemeLaura <- function (base_size = 12, base_family = "") {
 # Call up that theme before plotting graphs.
 theme_set(ThemeLaura())
 
-# Multiplot function
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-      require(grid)
-      
-      # Make a list from the ... arguments and plotlist
-      plots <- c(list(...), plotlist)
-      
-      numPlots = length(plots)
-      
-      # If layout is NULL, then use 'cols' to determine layout
-      if (is.null(layout)) {
-            # Make the panel
-            # ncol: Number of columns of plots
-            # nrow: Number of rows needed, calculated from # of cols
-            layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
-                             ncol = cols, nrow = ceiling(numPlots/cols))
-      }
-      
-      if (numPlots==1) {
-            print(plots[[1]])
-            
-      } else {
-            # Set up the page
-            grid.newpage()
-            pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-            
-            # Make each plot, in the correct location
-            for (i in 1:numPlots) {
-                  # Get the i,j matrix positions of the regions that contain this subplot
-                  matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-                  
-                  print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                                  layout.pos.col = matchidx$col))
-            }
-      }
-}
 
-# Getting samples and peak picking ------------------------------------------
-# Using an Excel file with metadata to select which samples I want to process.
-setwd(RawDataDir)
-wb <- loadWorkbook("20141014 Whole blood workup worklist.xlsx")
-Meta <- readWorksheet(wb, "Sheet2")
-Meta$File <- paste0(Meta$File, ".mzdata.xml")
-Samples <- Meta$File[file.exists(Meta$File) & Meta$Mode == "ESI-"]
-
-
-# Getting the names of the output data.frames' sample columns
-SampCol <- sub("mzdata.xml", "mzdata", make.names(Samples))
+# Peak picking ------------------------------------------
 
 # Making a note of start time for this step
 tpick.init <- Sys.time() 
@@ -159,7 +126,8 @@ Prefilter <- c(10, 5000)
 
 DataEnegP.xs1 <- xcmsSet(Samples, method = "centWave",  ppm=PPM, 
                          peakwidth=c(4,12), 
-                         snthresh = SNthresh, mzCenterFun="apex", prefilter = Prefilter,
+                         snthresh = SNthresh, mzCenterFun="apex", prefilter = 
+                               Prefilter,
                          integrate = 1, fitgauss= TRUE)
 save(DataEnegP.xs1, file="DataEnegP xs1.RData")
 
@@ -322,6 +290,8 @@ tQC.init <- Sys.time()
 
 # Selecting some random mass features and samples to scrutinize and then
 # saving the names of those mass features and samples.
+set.seed(253)
+
 MFs <- as.numeric(sample(1:nrow(DataEnegP.filter), 30))
 RandSamp <- as.numeric(sample(length(Samples), 10))
 write.csv(MFs, paste(Sys.Date(), 
@@ -347,7 +317,8 @@ for (i in 1:length(MFs)){
 ColRainbow <- colorRampPalette(c("green", "blue", "purple"))
 MyColors <- c(ColRainbow(length(RandSamp) - 1), "red")
 
-xset.raw <- xcmsRaw(Samples[RandSamp[10]], profstep = 0.01, profmethod = "bin")
+xset.raw <- xcmsRaw(Samples[RandSamp[length(RandSamp)]], profstep = 0.01, 
+                    profmethod = "bin")
 
 setwd(MainDir)
 # 1st column shows the uncorrected EICs.
@@ -425,7 +396,8 @@ for(i in 1:30){
                   axis.text.y = element_text(angle = 90, hjust = 0.5))
       
       
-      EICplot[[3*i]]<- ggplot(MSraw[[i]], aes(x = time/60, y = mz, color = intensity)) +
+      EICplot[[3*i]]<- ggplot(MSraw[[i]], aes(x = time/60, y = mz, color = 
+                                                    intensity)) +
             geom_point() + xlab("RT (min)") + ylab("m/z") +
             ggplot2::annotate("rect", xmin = min(MSraw[[i]]$time/60), 
                               xmax = max(MSraw[[i]]$time/60), 
@@ -453,7 +425,7 @@ tQC.final <- Sys.time()
 tQC <- as.numeric(difftime(tQC.final, tQC.init, units = "mins"))
 write.csv(tQC, "tQC.csv")
 
-# Calculating processing times for each step --------------------------------------------
+# Calculating processing times for each step --------------------------------
 setwd(RawDataDir)
 
 # Make a data.frame with all the times that each step required. 
@@ -524,6 +496,6 @@ ggsave("DataEnegP bar chart of numbers of mass features at each step.png")
 # Saving final workspace ------------------------------
 setwd(RawDataDir)
 save(DataEnegP, file = "DataEnegP xcmsSet object.RData")
-# save.image("DataEnegP workspace.RData") # This saves EVERYTHING that is currently
-# in your workspace, which is a pretty huge file. Skip this step if you don't 
-# think you'll need that. 
+# save.image("DataEnegP workspace.RData") # This saves EVERYTHING that is 
+# currently in your workspace, which is a pretty huge file. Skip this step if 
+# you don't think you'll need that. 
