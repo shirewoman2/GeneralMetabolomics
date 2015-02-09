@@ -33,9 +33,7 @@ ThemeLaura <- function (base_size = 12, base_family = "") {
 theme_set(ThemeLaura())
 
 
-MainDir <- "C:/Users/Laura/Documents/LCMS metabolomics"
-
-setwd(MainDir)
+setwd("C:/Users/Laura/Documents/LCMS metabolomics")
 
 
 # eic function ============================================================
@@ -123,7 +121,7 @@ eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
 
 # # EXAMPLE
 # # Loading data 
-# setwd(MainDir)
+# setwd("C:/Users/Laura/Documents/LCMS metabolomics")
 # Files <- read.csv("List of metabolomics files.csv")
 # 
 # load("Significant MFs linear regression 3 - 20150125.RData")
@@ -169,7 +167,7 @@ eicplot <- function(MF, EICs, Height = 8, Width = 8) {
 #       eicplot(Sig.3$MassFeature[m], TopEICs)
 # }
 # 
-# setwd(MainDir)
+# setwd("C:/Users/Laura/Documents/LCMS metabolomics")
 
 # Matching to other MFs --------------------------------------------------
 
@@ -681,18 +679,24 @@ allionplot <- function(allion.df, Height = 8, Width = 8,
 specifions <- function(MF.df, Files, Ions) {
       
       PossibleIons <- data.frame(Ion = c("M+Na", 
-                                            "M+1", 
-                                            "M+2", 
-                                            "M+3",
-                                            "M+Cl", 
-                                            "M-H2O"),
-                                 MassAdd = c(22.98977- 1.0073, # positive mode: If molecule gains Na, wouldn't also gain H
-                                             1.008665,
-                                             2*1.008665,
-                                             3*1.008665,
-                                             34.96885+1.0073, # negative mode: If molecule gains Cl, wouldn't also lose H
-                                             -18.01056))
-
+                                         "M+1", 
+                                         "M+2", 
+                                         "M+3",
+                                         "M+Cl", 
+                                         "M-H2O",
+                                         "M-1",
+                                         "M-2", 
+                                         "M-3"),
+      MassAdd = c(22.98977- 1.0073, # positive mode: If molecule gains Na, wouldn't also gain H
+                  1.008665,
+                  2*1.008665,
+                  3*1.008665,
+                  34.96885+1.0073, # negative mode: If molecule gains Cl, wouldn't also lose H
+                  -18.01056,
+                  -1.008665,
+                  -2*1.008665,
+                  -3*1.008665))
+      
       MF.df$MassFeature.ion <- "originally detected ion"
       
       for (i in 1:length(Ions)) {
