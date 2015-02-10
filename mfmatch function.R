@@ -38,11 +38,41 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       # Checking each row in DF.X for any matches in DF.Y
       for (i in 1:nrow(DF.X)){
             
-            MFmatch[[i]] <- DF.Y[DF.Y$mz.Y > (mz.X[i] - (PPM/1e6*mz.X[i])) 
-                                 & DF.Y$mz.Y < (mz.X[i] + (PPM/1e6*mz.X[i])) 
-                                 & DF.Y$RT.Y > RT.X[i] - RTRange 
-                                 & DF.Y$RT.Y < RT.X[i] + RTRange, ]
-            
+            if (is.na(DF.X$RT.X[i])){
+                  MFmatch[[i]] <- DF.Y[
+                        DF.Y$mz.Y > (mz.X[i] - (PPM/1e6*mz.X[i])) 
+                        & DF.Y$mz.Y < (mz.X[i] + (PPM/1e6*mz.X[i])), ]
+                  
+            } else {
+                  
+                  MFmatch[[i]] <- DF.Y[
+                        DF.Y$mz.Y > (mz.X[i] - (PPM/1e6*mz.X[i])) 
+                        & DF.Y$mz.Y < (mz.X[i] + (PPM/1e6*mz.X[i])) 
+                        & DF.Y$RT.Y > RT.X[i] - RTRange 
+                        & DF.Y$RT.Y < RT.X[i] + RTRange, ]
+                  MFmatch[[i]] <- MFmatch[[i]][
+                        complete.cases(MFmatch[[i]]$mz.Y), ]
+                  
+                  if (nrow(MFmatch[[i]]) > 0) {
+                        MFmatch[[i]] <- 
+                              rbind(MFmatch[[i]], 
+                                    DF.Y[DF.Y$mz.Y > (mz.X[i] - 
+                                                            (PPM/1e6*mz.X[i])) 
+                                         & DF.Y$mz.Y < (mz.X[i] + 
+                                                              (PPM/1e6*mz.X[i])) 
+                                         & is.na(DF.Y$RT.Y), ])
+                        
+                        
+                  } else {
+                        MFmatch[[i]] <- 
+                              DF.Y[DF.Y$mz.Y > (mz.X[i] - 
+                                                      (PPM/1e6*mz.X[i])) 
+                                   & DF.Y$mz.Y < (mz.X[i] + 
+                                                        (PPM/1e6*mz.X[i])) 
+                                   & is.na(DF.Y$RT.Y), ]
+                        
+                  }
+            }
             Matched.Y[i] <- as.numeric(nrow(MFmatch[[i]]))
       }
       
@@ -57,23 +87,42 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
                             ppm = NA, 
                             RTdif = NA)
       
-      # If there was more than 1 potential match, take the one that was closest
-      # by m/z and then by RT. Calculate the difference in ppm and RT in min.
+      Matches <- dlply(Matches, "MassFeature.X")
+      
+      # If there was more than 1 potential match and the RT was listed, take 
+      # the one that was closest by m/z and then by RT. If there was no RT 
+      # listed, take all matches. 
+      # Calculate the difference in m/z in ppm and RT in min.
       for (i in which(Matched.Y > 0)){
-            for (n in 1:nrow(MFmatch[[i]])){
-                  MFmatch[[i]]$ppm[n] <- abs((mz.X[i]-MFmatch[[i]]$mz.Y[n])/mz.X[i]*1e6)
-                  MFmatch[[i]]$RTdif[n] <- abs(RT.X[i]-MFmatch[[i]]$RT.Y[n])
-                  MFmatch[[i]]$MassFeature.X <- MFname.X[i]
+            
+            if (is.na(Matches[[i]]$RT.X)){
+                  Matches[[i]] <- MFmatch[[i]]
+                  Matches[[i]]$ppm <- 
+                        abs((mz.X[i] - Matches[[i]]$mz.Y)/mz.X[i]*1e6)
+                  Matches[[i]]$MassFeature.X <- MFname.X[i]
+                  
+            } else {
+                  
+                  for (n in 1:nrow(MFmatch[[i]])){
+                        MFmatch[[i]]$ppm[n] <- 
+                              abs((mz.X[i] - MFmatch[[i]]$mz.Y[n])/mz.X[i]*1e6)
+                        MFmatch[[i]]$RTdif[n] <- 
+                              abs(RT.X[i] - MFmatch[[i]]$RT.Y[n])
+                        MFmatch[[i]]$MassFeature.X <- MFname.X[i]
+                  }
+                  MFmatch[[i]] <- arrange(MFmatch[[i]], ppm, RTdif)
+                  
+                  Matches[[i]]$MassFeature.Y <- 
+                        as.character(MFmatch[[i]]$MassFeature.Y[1])
+                  Matches[[i]]$mz.Y <- MFmatch[[i]]$mz.Y[1]
+                  Matches[[i]]$RT.Y <- MFmatch[[i]]$RT.Y[1]
+                  Matches[[i]]$ppm <- MFmatch[[i]]$ppm[1]
+                  Matches[[i]]$RTdif <- MFmatch[[i]]$RTdif[1]
+                  
             }
-            MFmatch[[i]] <- arrange(MFmatch[[i]], ppm, RTdif)
-            
-            Matches$MassFeature.Y[i] <- as.character(MFmatch[[i]]$MassFeature.Y[1])
-            Matches$mz.Y[i] <- MFmatch[[i]]$mz.Y[1]
-            Matches$RT.Y[i] <- MFmatch[[i]]$RT.Y[1]
-            Matches$ppm[i] <- MFmatch[[i]]$ppm[1]
-            Matches$RTdif[i] <- MFmatch[[i]]$RTdif[1]
-            
       }
+      
+      Matches <- rbind.fill(Matches)
       
       # Add to the Matches data.frame any MFs in Y that weren't found in X.
       NoMatch <- DF.Y[DF.Y$MassFeature %in% 
