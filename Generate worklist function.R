@@ -2,28 +2,35 @@
 # order is randomized, there is a QC injection every 10 injections, and the 
 # worklist starts and ends with a Master QC injection. 
 # Input: 
-#       1. Samples -- a data.frame containing columns for:
-#             a. SampleID - a vector of the sample IDs as you would like them 
+#       1. SampleID - a vector of the sample IDs as you would like them 
 #             to show up in the file names. These must be unique.
-#             b. Matrix -- the matrix of the sample
 #       2. Date -- a number for how you'd like to represent today's 
 #       date, which will be at the front of each file. No symbols allowed.
-#       3. Matrix -- the sample matrix (this is set up to make a worklist for
-#                     one matrix at a time. For multiple matrices,
-#                     make multiple worklists.)
-#      3. Project -- a brief abbreviation or code word for which project this
+#       3. Project -- a brief abbreviation or code word for which project this
 #       is for. Example: "MnPS" or "SCOR MDZ".
-#       4. Qnum.start -- number of QC injections you'd like at the start of the
-#       run. (Defaults to 3)
-#       5. Qnum.end -- number of QC injections you'd like at the end of the run. 
-#       (Defaults to 1.)
-#       6. Mode -- a character string of which ionization modes you'd like to run. 
+#       4. Matrix -- the sample matrix (this is set up to make a worklist for
+#                    one matrix at a time. For multiple matrices,
+#                    make multiple worklists.)
+#       5. Mode -- a character string of which ionization modes you'd like to run. 
 #       Defaults to c("Epos", "Eneg") but other options are "Apos" and "Aneg".
+#       6. FilePath -- a character string with the path where you'd like to
+#       save the files. Format is tricky; it must be like this:
+#             "D:\\MassHunter\\Data\\Laura\\Mn exposure\\Mn exposure Puget Sound workers\\"
+#       7. Column -- a character string listing which column was used. Options
+#       are "SB-Aq" and "TOSOH". Default is "SB-Aq".
+#       8. Qnum.start -- number of QC injections you'd like at the start of the
+#       run. (Defaults to 3)
+#       9. Qnum.end -- number of QC injections you'd like at the end of the run. 
+#       (Defaults to 1.)
+#       10. MQnum.start -- number of Master QC injections you'd like at the start of the
+#       run. (Defaults to 1)
+#       11. MQnum.end -- number of Master QC injections you'd like at the end of the run. 
+#       (Defaults to 1.)
 
-worklist <- function(Samples, Date, Matrix, FilePath, Column = "SB-Aq",
+worklist <- function(SampleID, Date, Project, Matrix, Mode = c("Epos", "Eneg"),
+                     FilePath, Column = "SB-Aq",
                      Qnum.start = 3, Qnum.end = 1, 
-                     MQnum.start = 1, MQnum.end = 1,
-                     Mode = c("Epos", "Eneg")) {
+                     MQnum.start = 1, MQnum.end = 1) {
       
       require(plyr)
       require(tidyr)
@@ -182,5 +189,10 @@ Matrix <- "urine"
 FilePath <- "D:\\MassHunter\\Data\\Laura\\Mn exposure\\Mn exposure Puget Sound workers\\"
 Date <- 20150209
 
-MyWorklist <- worklist(SampleID, Date, Matrix, FilePath)
+MyWorklist <- worklist(SampleID = SampleID, Date = Date, Project = Project, 
+                       Matrix = Matrix, FilePath = FilePath)
+
+# Checking that all the samples are in the worklist.
+SampleID %in% MyWorklist$SampleID
+
 
