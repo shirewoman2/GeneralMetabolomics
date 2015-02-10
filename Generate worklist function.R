@@ -20,7 +20,7 @@
 #       6. Mode -- a character string of which ionization modes you'd like to run. 
 #       Defaults to c("Epos", "Eneg") but other options are "Apos" and "Aneg".
 
-worklist <- function(Samples, Date, Matrix, FilePath,
+worklist <- function(Samples, Date, Matrix, FilePath, Column = "SB-Aq",
                      Qnum.start = 3, Qnum.end = 1, 
                      MQnum.start = 1, MQnum.end = 1,
                      Mode = c("Epos", "Eneg")) {
@@ -140,13 +140,20 @@ worklist <- function(Samples, Date, Matrix, FilePath,
       
       Worklist$type <- NULL
       
+      Worklist$Column <- Column
+      
       # Adding the method to use
-      Methods <- data.frame(Mode = c("Epos", "Eneg", "Apos", "Aneg"),
+      Methods <- data.frame(Mode = rep(c("Epos", "Eneg", "Apos", "Aneg"), 2),
+                            Column = rep(c("SB-Aq", "TOSOH"), each = 4),
                             Method = c("metabolomics+ESI.m",
                                        "metabolomicsnegESI.m",
-                                       "metabolomicsAPCI+.m",
-                                       "metabolomicsAPCIneg.m")) # !!! NEED TO CHECK APCI METHODS!!!!
-      Worklist <- join(Worklist, Methods, by = "Mode")
+                                       "metabolomicsAPCI.m",
+                                       "metabolomicsAPCIneg.m", # Not sure of APCI- method.
+                                       "polar_TOSOH_metabolomics+ESI.m", 
+                                       "polar_TOSOH_metabolomicsnegESI.m", 
+                                       "polar_TOSOH_metabolomics+APCI.m",
+                                       NA)) 
+      Worklist <- join(Worklist, Methods, by = c("Mode", "Column"))
       
       # Adding the file path
       Worklist$FilePath <- paste0(FilePath, Worklist$File, ".d")
@@ -156,7 +163,8 @@ worklist <- function(Samples, Date, Matrix, FilePath,
       Worklist$SampType[str_detect(Worklist$SampleID, "QC")] <- "QC"
       Worklist$SampType[str_detect(Worklist$SampleID, "MQC")] <- "Master QC"
       Worklist <- Worklist[, c("SampleID", "VialPos", "Method", "FilePath",
-                               "InjectionOrder", "Mode", "SampType", "File")]
+                               "InjectionOrder", "Mode", "SampType", "File",
+                               "Column")]
       
       return(Worklist)
             
