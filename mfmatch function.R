@@ -21,9 +21,8 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       require(plyr)
       require(stringr)
       
-      # Renaming data.frames and making sure that the mass features are unique.
-      DF.X <- X[unique(X$MassFeature), c("MassFeature", "mz", "RT")]
-      DF.Y <- Y[unique(Y$MassFeature), c("MassFeature", "mz", "RT")]
+      DF.X <- X[, c("MassFeature", "mz", "RT")]
+      DF.Y <- Y[, c("MassFeature", "mz", "RT")]
       
       # Renaming to keep track of which mass feature, m/z, and RT came from 
       # which dataset.
@@ -74,7 +73,6 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
                         
                   }
             }
-
             Matched.Y[i] <- as.numeric(nrow(MFmatch[[i]]))
       }
       
