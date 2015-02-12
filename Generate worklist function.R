@@ -3,7 +3,9 @@
 # worklist starts and ends with a Master QC injection. 
 # Input: 
 #       1. SampleID - a vector of the sample IDs as you would like them 
-#             to show up in the file names. These must be unique.
+#             to show up in the file names. These must be unique and should NOT
+#             contain any special characters, including periods because it
+#             makes things more challenging downstream.
 #       2. Date -- a number for how you'd like to represent today's 
 #       date, which will be at the front of each file. No symbols allowed.
 #       3. Project -- a brief abbreviation or code word for which project this
