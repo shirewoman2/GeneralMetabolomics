@@ -46,7 +46,9 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
             }
             
             DF.Y <- rbind.fill(Isomers, DF.Y[complete.cases(DF.Y$RT), ])
+            DF.Y$mz.round <- NULL
       }
+      
       
       # Renaming to keep track of which mass feature, m/z, and RT came from 
       # which dataset.
