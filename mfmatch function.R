@@ -31,6 +31,9 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       DF.Y$MassFeature <- as.character(DF.Y$MassFeature)
       DF.X$MassFeature <- as.character(DF.X$MassFeature)
       
+      DF.X <- arrange(DF.X, MassFeature)
+      DF.Y <- arrange(DF.Y, MassFeature)
+      
       # Need to condense compounds that are isomers without known RT since we
       # can't determine which would be the best match without RT
       if (anyNA(DF.Y$RT)) {
@@ -56,10 +59,12 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       names(DF.Y) <- paste(names(DF.Y), "Y", sep = ".")
       
       MFmatch <- list()
-      Matched.Y <- c()
+      Matched.X <- c()
       MFname.X <- as.character(DF.X$MassFeature)
       mz.X <- DF.X$mz
+      names(mz.X) <- DF.X$MassFeature.X
       RT.X <- DF.X$RT
+      names(RT.X) <- DF.X$MassFeature.X
       
       # Checking each row in DF.X for any matches in DF.Y
       for (i in 1:nrow(DF.X)){
@@ -91,10 +96,11 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
                              & is.na(DF.Y$RT.Y), ]
                   
             }
-            Matched.Y[i] <- as.numeric(nrow(MFmatch[[i]]))            
+            Matched.X[i] <- as.numeric(nrow(MFmatch[[i]]))            
       }
-
       
+      names(MFmatch) <- DF.X$MassFeature.X
+      names(Matched.X) <- DF.X$MassFeature.X
       
       # Making a new data.frame to hold matched mass features
       Matches <- data.frame(MassFeature.X = DF.X$MassFeature.X,
@@ -103,7 +109,7 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
                             mz.Y = NA,
                             RT.X = DF.X$RT.X,
                             RT.Y = NA,
-                            NumMatched = Matched.Y,
+                            NumMatched = Matched.X,
                             ppm = NA, 
                             RTdif = NA)
       
@@ -113,33 +119,24 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       # the one that was closest by m/z and then by RT. If there was no RT 
       # listed, take all matches. 
       # Calculate the difference in m/z in ppm and RT in min.
-      for (i in which(Matched.Y > 0)){
+      for (i in names(Matched.X)[which(Matched.X > 0)]){
             
-            if (is.na(Matches[[i]]$RT.X)){
-                  Matches[[i]] <- MFmatch[[i]]
-                  Matches[[i]]$ppm <- 
-                        abs((mz.X[i] - Matches[[i]]$mz.Y)/mz.X[i]*1e6)
-                  Matches[[i]]$MassFeature.X <- MFname.X[i]
-                  
-            } else {
-                  
-                  for (n in 1:nrow(MFmatch[[i]])){
-                        MFmatch[[i]]$ppm[n] <- 
-                              abs((mz.X[i] - MFmatch[[i]]$mz.Y[n])/mz.X[i]*1e6)
-                        MFmatch[[i]]$RTdif[n] <- 
-                              abs(RT.X[i] - MFmatch[[i]]$RT.Y[n])
-                        MFmatch[[i]]$MassFeature.X <- MFname.X[i]
-                  }
-                  MFmatch[[i]] <- arrange(MFmatch[[i]], ppm, RTdif)
-                  
-                  Matches[[i]]$MassFeature.Y <- 
-                        as.character(MFmatch[[i]]$MassFeature.Y[1])
-                  Matches[[i]]$mz.Y <- MFmatch[[i]]$mz.Y[1]
-                  Matches[[i]]$RT.Y <- MFmatch[[i]]$RT.Y[1]
-                  Matches[[i]]$ppm <- MFmatch[[i]]$ppm[1]
-                  Matches[[i]]$RTdif <- MFmatch[[i]]$RTdif[1]
-                  
+            for (n in 1:nrow(MFmatch[[i]])){
+                  MFmatch[[i]]$ppm[n] <- 
+                        abs((mz.X[i] - MFmatch[[i]]$mz.Y[n])/mz.X[i]*1e6)
+                  MFmatch[[i]]$RTdif[n] <- 
+                        abs(RT.X[i] - MFmatch[[i]]$RT.Y[n])
+                  MFmatch[[i]]$MassFeature.X <- i
             }
+            MFmatch[[i]] <- arrange(MFmatch[[i]], ppm, RTdif)
+            
+            Matches[[i]]$MassFeature.Y <- 
+                  as.character(MFmatch[[i]]$MassFeature.Y[1])
+            Matches[[i]]$mz.Y <- MFmatch[[i]]$mz.Y[1]
+            Matches[[i]]$RT.Y <- MFmatch[[i]]$RT.Y[1]
+            Matches[[i]]$ppm <- MFmatch[[i]]$ppm[1]
+            Matches[[i]]$RTdif <- MFmatch[[i]]$RTdif[1]
+            
       }
       
       Matches <- rbind.fill(Matches)
