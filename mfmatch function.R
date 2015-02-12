@@ -15,6 +15,8 @@
 # showing which ones match and what the m/z and RT differences are. The suffixes
 # on the columns should make it clear which values came from which of the 
 # original data.frames.
+# When there were any NA values for RT in Y, output also includes a data.frame 
+# "Isomers" that shows which isomers were collapsed into one m/z for searching.
 #
 # !!! Important: If one of the data.frames includes compounds whose RT you 
 # don't know, make that one Y. For somewhat arcane reasons, this works 
@@ -40,13 +42,15 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
             
             DF.Y$mz.round <- round(DF.Y$mz, digits = 4)
             
-            Isomers <<- dlply(DF.Y[is.na(DF.Y$RT), ], "mz.round")
+            Isomers <- dlply(DF.Y[is.na(DF.Y$RT), ], "mz.round")
             
             for (i in 1:length(Isomers)){
                   Isomers[[i]]$MassFeature[1] <- str_c(Isomers[[i]]$MassFeature, 
                                                        collapse = " ")
                   Isomers[[i]] <- Isomers[[i]][1, ]
             }
+            
+            Isomers <<- ldply(Isomers)
             
             DF.Y <- rbind.fill(Isomers, DF.Y[complete.cases(DF.Y$RT), ])
             DF.Y$mz.round <- NULL
