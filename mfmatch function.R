@@ -15,6 +15,10 @@
 # showing which ones match and what the m/z and RT differences are. The suffixes
 # on the columns should make it clear which values came from which of the 
 # original data.frames.
+#
+# !!! Important: If one of the data.frames includes compounds whose RT you 
+# don't know, make that one Y. For somewhat arcane reasons, this works 
+# much better.  !!! #
 
 
 mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
