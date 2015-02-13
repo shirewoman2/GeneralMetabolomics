@@ -44,16 +44,20 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
             
             Isomers <- dlply(DF.Y[is.na(DF.Y$RT), ], "mz.round")
             
-            for (i in 1:length(Isomers)){
-                  Isomers[[i]]$MassFeature[1] <- str_c(Isomers[[i]]$MassFeature, 
+            for (r in 1:length(Isomers)){
+                  Isomers[[r]]$MassFeature[1] <- str_c(Isomers[[r]]$MassFeature, 
                                                        collapse = " ")
-                  Isomers[[i]] <- Isomers[[i]][1, ]
+                  Isomers[[r]] <- Isomers[[r]][1, ]
             }
             
-            Isomers <<- ldply(Isomers)
+            Isomers <- ldply(Isomers)
+            Isomers$.id <- NULL
+            
+            Isomers <<- Isomers
             
             DF.Y <- rbind.fill(Isomers, DF.Y[complete.cases(DF.Y$RT), ])
             DF.Y$mz.round <- NULL
+            
       }
       
       
@@ -71,16 +75,14 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
       names(RT.X) <- DF.X$MassFeature.X
       
       # Checking each row in DF.X for any matches in DF.Y
-      for (i in 1:nrow(DF.X)){
+      for (i in DF.X$MassFeature.X){
             
             MFmatch[[i]] <- DF.Y[
                   DF.Y$mz.Y > (mz.X[i] - (PPM/1e6*mz.X[i])) 
                   & DF.Y$mz.Y < (mz.X[i] + (PPM/1e6*mz.X[i])) 
                   & DF.Y$RT.Y > RT.X[i] - RTRange 
                   & DF.Y$RT.Y < RT.X[i] + RTRange, ]
-            MFmatch[[i]] <- MFmatch[[i]][
-                  complete.cases(MFmatch[[i]]$mz.Y), ]
-            
+                        
             if (nrow(MFmatch[[i]]) > 0) {
                   MFmatch[[i]] <- 
                         rbind(MFmatch[[i]], 
@@ -102,9 +104,6 @@ mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){
             }
             Matched.X[i] <- as.numeric(nrow(MFmatch[[i]]))            
       }
-      
-      names(MFmatch) <- DF.X$MassFeature.X
-      names(Matched.X) <- DF.X$MassFeature.X
       
       # Making a new data.frame to hold matched mass features
       Matches <- data.frame(MassFeature.X = DF.X$MassFeature.X,
