@@ -1,4 +1,4 @@
-# Master QC tracking
+# Tracking instrument over time
 
 # This script looks at how internal standard peaks in Master QC samples have
 # changed over time. 
@@ -824,7 +824,8 @@ R20140222$Mode <- "Eneg"
 
 
 # Putting all the data.frames together ==================================
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics")
+setwd("C:/Users/Laura/Documents/LCMS metabolomics")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics") # Sofia
 
 DF <- list(R20110211, R20110223, R20110620, R20141017, 
            R20110504, R20120202, R20121008, R20130201,
@@ -984,4 +985,88 @@ ggplot(Data, aes(x = DateTime, y = RT, color = IS)) +
       stat_smooth(method=loess)
 ggsave("Scatter plot showing how IS RT changes with time.png", 
        height = 8, width = 12)
+
+
+# Extracting TIC data -----------------------------------------------------
+library(xcms)
+
+setwd("C:/Users/Laura/Documents/LCMS metabolomics")
+load("Metabolomics files.RData")
+
+# Calculating number of files for each mode, matrix, and project
+NumFiles <- ddply(Files, c("Mode", "Matrix", "Project"), function (x) nrow(x))
+NumFiles <- plyr::rename(NumFiles, c("V1" = "n"))
+
+Files$ModeMatProj <- paste(Files$Mode, Files$Matrix, Files$Project, sep = ".")
+Files.l <- dlply(Files, "ModeMatProj")
+names(Files.l)
+
+NumFiles$ModeMatProj <- paste(NumFiles$Mode, NumFiles$Matrix, 
+                              NumFiles$Project, sep = ".")
+
+# Randomly selecting up to 20 files to extract TIC data from
+set.seed(318)
+
+RandFiles <- list()
+for (i in 1:nrow(NumFiles)){
+      if (NumFiles$n[i] > 20) {
+            RandFiles[[i]] <- sample(1:NumFiles$n[i], 20)
+      } else {
+            RandFiles[[i]] <- c(1:NumFiles$n[i])
+      }
+      
+      RandFiles[[i]] <- data.frame(
+            Files.l[[NumFiles$ModeMatProj[i]]][RandFiles[[i]], ])
+      
+}
+
+RandFiles <- rbind.fill(RandFiles)
+
+
+TIC <- list()
+
+for (i in 1:nrow(RandFiles)){
+      setwd(RandFiles$Directory[i])
+      Raw <- xcmsRaw(paste0(RandFiles$File[i], ".mzdata.xml"), profstep = 0,
+                     profmethod = "bin")
+      TIC[[i]] <- data.frame(plotTIC(Raw))
+      TIC[[i]]$File <- RandFiles$File[i]
+      TIC[[i]]$Mode <- RandFiles$Mode[i]
+      TIC[[i]]$Matrix <- RandFiles$Matrix[i]
+      TIC[[i]]$Project <- RandFiles$Project[i]
+      TIC[[i]]$Date <- RandFiles$Date[i]
+}
+
+TIC <- rbind.fill(TIC)
+TIC <- plyr::rename(TIC, c("X1" = "Time", 
+                           "X2" = "Intensity"))
+
+TICsum <- ddply(TIC, c("File", "Mode", "Matrix", "Project", "Date"), 
+                summarize, Sum = sum(Intensity))
+
+# Saving TIC data
+save(TIC, TICsum, file = "TIC data for randomly selected files.RData")
+
+
+# Making graphs of TIC over time ----------------------------------------------
+# Trying to think of best way to cut date...
+TICsum$Date2 <- cut(TICsum$Date, breaks = 5, labels = FALSE)
+TICsum$Year <- as.factor(year(TICsum$Date))
+
+TICsum <- TICsum[TICsum$Matrix != "serum", ]
+
+windows()
+ggplot(TICsum, aes(x = Year, y = Sum, fill = Project)) +
+      geom_boxplot() + 
+      facet_grid(Matrix ~ Mode)
+ggsave("Boxplots comparing TICsum over time for various projects.png",
+       height = 10, width = 12)
+
+ggplot(TICsum, aes(x = Date, y = Sum, color = Project)) +
+      geom_point() + 
+      facet_grid(Matrix ~ Mode)
+ggsave("Scatter plots comparing TICsum over time for various projects.png", 
+       height = 10, width = 12)
+
+
 
