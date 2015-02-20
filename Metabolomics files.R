@@ -10,8 +10,8 @@ library(tidyr)
 library(plyr)
 library(dplyr)
 library(lubridate)
-library(XLConnect)
 library(reshape2)
+
 
 MainDir <- "C:/Users/Laura/Documents/LCMS metabolomics"
 
@@ -301,9 +301,30 @@ MnPSFiles$Directory <- "F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposu
 MnPSFiles <- MnPSFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
                            "Matrix", "Date", "Project", "Directory")]
 
+
+# Busulf --------------------------------------------------
+setwd("F:/Busulfan/Busulfan_Postdose_Data_10_2014")
+load("Busulfan retrospective tidy metadata.RData")
+
+BusulfFiles <- Meta
+rm(Meta, Meta.all, Meta.all.clin, Meta.clin)
+
+BusulfFiles <- plyr::rename(BusulfFiles, c("drugs.present.in.sample" = "Special",
+                                           "UPN" = "Subject"))
+BusulfFiles$Matrix <- "plasma"
+BusulfFiles$Date <- ymd(str_sub(BusulfFiles$File, 1, 8))
+BusulfFiles$Project <- "Busulf"
+BusulfFiles$Directory <- "F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_neg"
+BusulfFiles$Directory[BusulfFiles$Mode == "Epos"] <- 
+      "F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_pos"
+
+BusulfFiles <- BusulfFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
+                           "Matrix", "Date", "Project", "Directory")]
+
+
 # Putting all the files together ---------------------------------------
 Files <- rbind.fill(SCORFiles, SFNFiles, SCORFragmentFiles, MetopFiles,
-                    MnPSFiles, WBFiles)
+                    MnPSFiles, WBFiles, BusulfFiles)
 
 # Removing any missing files or directories. 
 Files <- Files[complete.cases(Files$File) & complete.cases(Files$Directory), ]
@@ -312,10 +333,13 @@ Files <- Files[complete.cases(Files$File) & complete.cases(Files$Directory), ]
 # got in there b/c of the way I had set up my Excel files to make the file name.
 Files$File <- str_trim(Files$File)
 
+# Adding dates for files that are missing them.
+Files$Date[is.na(Files$Date)] <- ymd(str_sub(Files$File[is.na(Files$Date)], 
+                                             1, 8))
 
 # Checking numbers
 ddply(Files, c("Mode", "Matrix"), function(x) nrow(x))
-
+ddply(Files, c("Project", "Mode"), function(x) nrow(x))
 
 # Saving the data ------------------------------------------
 setwd(MainDir)
