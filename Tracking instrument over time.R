@@ -39,7 +39,8 @@ theme_set(ThemeLaura())
 
 # 20141117 Epos run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project") # Sofia
+setwd("F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposure Puget Sound workers raw data") # LabPC
 R20141117 <- loadWorkbook("20141117 ESI pos CEEH.xlsx")
 setMissingValue(R20141117, value = "")
 R20141117 <- readWorksheet(R20141117, sheet = "Sheet1", startRow = 2)
@@ -78,7 +79,9 @@ R20141117$Mode <- "Epos"
 
 # 20141118 EnegU run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project") # Sofia
+setwd("F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposure Puget Sound workers raw data") # LabPC
+
 R20141118 <- loadWorkbook("20141118 EnegU IS quant report.xlsx")
 setMissingValue(R20141118, value = "")
 R20141118 <- readWorksheet(R20141118, sheet = "Sheet1", startRow = 2)
@@ -90,8 +93,6 @@ R20141118 <- plyr::rename(R20141118, c("Name" = "Sample",
                                        "Acq..Date.Time" = "DateTime"))
 
 IS <- c("Salicylic", "Pred", "Stearic")
-
-R20141118 <- R20141118[, -c(4, 8, 12)]
 
 names(R20141118)[4:12] <- paste(rep(c("RT", "Area", "Height"), length(IS)),
                                 rep(IS, each = 3), sep=".")
@@ -116,12 +117,90 @@ R20141118$Run <- "Mn Puget Sound 20141118"
 R20141118$Mode <- "Eneg"
 
 
+# 20150209 Epos run ==============================================
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project") # Sofia
+setwd("F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposure Puget Sound workers raw data")
+R20150209 <- loadWorkbook("20150209 MnPS EposU IS quant report.xlsx")
+setMissingValue(R20150209, value = "")
+R20150209 <- readWorksheet(R20150209, sheet = "Sheet1", startRow = 2)
+
+names(R20150209)
+
+R20150209 <- plyr::rename(R20150209, c("Name" = "Sample",
+                                       "Data.File" = "File",
+                                       "Acq..Date.Time" = "DateTime"))
+
+IS <- c("MT", "RSG", "MDZ", "Prog")
+
+names(R20150209)[4:15] <- paste(rep(c("RT", "Area", "Height"), length(IS)),
+                                rep(IS, each = 3), sep=".")
+
+# Adding a column for the matrix
+R20150209$Matrix <- "urine"
+
+# Reshaping data to long format
+R20150209 <- R20150209 %>% gather(key, Value, -Sample, -File, -DateTime, 
+                                  -Matrix) %>%
+      separate(key, c("Type", "IS"), "\\.") %>% spread(Type, Value)
+
+# Adding a column for the type of sample
+R20150209$SampType <- "clinical"
+R20150209$SampType[str_detect(R20150209$Sample, "*QC*")] <- "QC"
+R20150209$SampType[str_detect(R20150209$Sample, "*MQC*")] <- "Master QC"
+
+# Adding a column for the run
+R20150209$Run <- "Mn Puget Sound 20150209"
+
+# Adding a column for the mode
+R20150209$Mode <- "Epos"
+
+# 20150210 EnegU run ==============================================
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project") # Sofia
+setwd("F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposure Puget Sound workers raw data") # LabPC
+
+R20150210 <- loadWorkbook("20150209 MnPS EnegU IS quant report.xlsx")
+setMissingValue(R20150210, value = "")
+R20150210 <- readWorksheet(R20150210, sheet = "Sheet1", startRow = 2)
+
+names(R20150210)
+
+R20150210 <- plyr::rename(R20150210, c("Name" = "Sample",
+                                       "Data.File" = "File",
+                                       "Acq..Date.Time" = "DateTime"))
+
+IS <- c("Salicylic", "Pred", "Stearic")
+
+names(R20150210)[4:12] <- paste(rep(c("RT", "Area", "Height"), length(IS)),
+                                rep(IS, each = 3), sep=".")
+
+# Adding a column for the matrix
+R20150210$Matrix <- "urine"
+
+# Reshaping data to long format
+R20150210 <- R20150210 %>% gather(key, Value, -Sample, -File, -DateTime, 
+                                  -Matrix) %>%
+      separate(key, c("Type", "IS"), "\\.") %>% spread(Type, Value)
+
+# Adding a column for the type of sample
+R20150210$SampType <- "clinical"
+R20150210$SampType[str_detect(R20150210$Sample, "*QC*")] <- "QC"
+R20150210$SampType[str_detect(R20150210$Sample, "*MQC*")] <- "Master QC"
+
+# Adding a column for the run
+R20150210$Run <- "Mn Puget Sound 20150210"
+
+# Adding a column for the mode
+R20150210$Mode <- "Eneg"
 
 # Whole blood =========================================
 
 # 20140930 Eneg run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics/Whole blood")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics/Whole blood") # Sofia
+setwd("F:/Whole blood vs plasma")
+
 R20140930 <- loadWorkbook("2014030 ESI- whole blood quant report.xlsx")
 setMissingValue(R20140930, value = "")
 R20140930 <- readWorksheet(R20140930, sheet = "Sheet1", startRow = 1)
@@ -156,7 +235,9 @@ R20140930$Mode <- "Eneg"
 
 # 20141014 Epos run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics/Whole blood")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/LCMS metabolomics/Whole blood") # Sofia
+setwd("F:/Whole blood vs plasma")
+
 R20141014 <- loadWorkbook("20141014 ESI+ whole blood quant report.xlsx")
 setMissingValue(R20141014, value = "")
 R20141014 <- readWorksheet(R20141014, sheet = "Sheet1", startRow = 2)
@@ -198,7 +279,8 @@ R20141014$Mode <- "Epos"
 
 # 20141017 Eneg run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project/Busulfan retrospective study")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project/Busulfan retrospective study") # Sofia
+setwd("F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_neg")
 R20141017 <- loadWorkbook("Busulfan EnegP IS peaks.xlsx")
 setMissingValue(R20141017, value = "")
 R20141017 <- readWorksheet(R20141017, sheet = "Sheet1", startRow = 2)
@@ -240,7 +322,9 @@ R20141017$Mode <- "Eneg"
 
 # 20141015 Epos run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project/Busulfan retrospective study")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Busulfan project/Busulfan retrospective study") # Sofia
+setwd("F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_pos")
+
 R20141015 <- loadWorkbook("Busulfan EposP IS peaks.xlsx")
 setMissingValue(R20141015, value = "")
 R20141015 <- readWorksheet(R20141015, sheet = "Sheet1", startRow = 2)
@@ -283,7 +367,9 @@ R20141015$Mode <- "Epos"
 # SCOR MDZ ===================================================
 
 # 20110211 EposU run --------------------------------------------
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics urine samples/20110211 SCOR subjects 1-6")
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics urine samples/20110211 SCOR subjects 1-6") # Sofia
+setwd("G:/Data/Metabolomics/Laura/SCOR project/20110211 SCOR subjects 1-6")
 R20110211 <- loadWorkbook("20110211 SCOR subjects 1-6.xlsx")
 setMissingValue(R20110211, value = "")
 R20110211 <- readWorksheet(R20110211, sheet = "data", startRow = 1,
@@ -332,7 +418,9 @@ R20110211$Mode <- "Epos"
 
 
 # 20110223 EposU run --------------------------------------------
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics urine samples/20110223 SCOR subjects 7-15")
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics urine samples/20110223 SCOR subjects 7-15") # Sofia
+setwd("G:/Data/Metabolomics/Laura/SCOR project/SCOR urine samples/20110223 SCOR subjects 7-15")
 R20110223 <- loadWorkbook("20110223 SCOR subjects 7-15.xlsx")
 setMissingValue(R20110223, value = "")
 R20110223 <- readWorksheet(R20110223, sheet = "20110223", startRow = 1,
@@ -381,7 +469,9 @@ R20110223$Mode <- "Epos"
 
 
 # 20110620 EposP run --------------------------------------------
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics plasma samples/20110620 SCOR plasma samples run #3")
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI+/Metabolomics plasma samples/20110620 SCOR plasma samples run #3") # Sofia
+setwd("G:/Data/Metabolomics/Laura/SCOR project/SCOR plasma samples/20110620 SCOR plasma")
 R20110620 <- loadWorkbook("20110620 IS peak areas.xlsx")
 setMissingValue(R20110620, value = "")
 R20110620 <- readWorksheet(R20110620, sheet = "IS peak areas", startRow = 1,
@@ -435,10 +525,13 @@ R20110620$Mode <- "Epos"
 
 
 # 20130201 EnegP run =======================================
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI-")
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI-") # Sofia
+setwd("G:/Data/Metabolomics/Laura/SCOR project/20120202 SCOR plasma and urine ESI neg")
+
 R20130201 <- loadWorkbook("20130201 SCOR EnegP IS peak areas and RTs.xlsx")
 setMissingValue(R20130201, value = "")
-R20130201 <- readWorksheet(R20130201, sheet = "Quant report", startRow = 2)
+R20130201 <- readWorksheet(R20130201, sheet = "Sheet1", startRow = 2)
 
 R20130201$Sample <- NULL
 
@@ -468,7 +561,10 @@ R20130201$Run <- "SCOR MDZ 20130201"
 R20130201$Mode <- "Eneg"
 
 # 20120202 EnegU and EnegP run ======================================
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI-/20120202 SCOR urine and plasma ESI-")
+
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR MDZ/ESI-/20120202 SCOR urine and plasma ESI-") # Sofia
+setwd("G:/Data/Metabolomics/Laura/SCOR project/20120202 SCOR plasma and urine ESI neg")
+
 R20120202 <- loadWorkbook("ESI- IS quant results with smoothing.xlsx")
 setMissingValue(R20120202, value = "")
 R20120202 <- readWorksheet(R20120202, sheet = "peak areas", startRow = 1)
@@ -512,7 +608,8 @@ R20120202$Mode <- "Eneg"
 
 # 20121008 EnegU run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/CHC2 project")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/CHC2 project") # Sofia
+setwd("F:/CHC2/EnegU")
 R20121008 <- loadWorkbook("EnegU IS peaks quant report.xlsx")
 setMissingValue(R20121008, value = "")
 R20121008 <- readWorksheet(R20121008, sheet = "Sheet1", startRow = 1)
@@ -547,7 +644,9 @@ R20121008$Matrix <- "urine"
 
 # 20110504 EposU run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/CHC2 project")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/CHC2 project") # Sofia
+setwd("F:/CHC2/EposU")
+
 R20110504 <- loadWorkbook("EposU IS peaks quant report.xlsx")
 setMissingValue(R20110504, value = "")
 R20110504 <- readWorksheet(R20110504, sheet = "quant report", startRow = 1)
@@ -584,7 +683,8 @@ R20110504$Matrix <- "urine"
 # CYP2D6 Metoprolol ========================================================
 # 20140630 EposP run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol") # Sofia
+setwd("C:/Users/Laura/Documents/CYP2D6 metoprolol")
 
 R20140630 <- loadWorkbook("Metoprolol EposP IS peaks.xlsx")
 setMissingValue(R20140630, value = "")
@@ -623,7 +723,9 @@ R20140630$Matrix[R20140630$SampType == "Master QC"] <- "urine"
 
 # 20140714 EposU run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol") # Sofia
+setwd("C:/Users/Laura/Documents/CYP2D6 metoprolol")
+
 R20140714 <- loadWorkbook("Metoprolol EposU IS peaks.xlsx")
 setMissingValue(R20140714, value = "")
 R20140714 <- readWorksheet(R20140714, sheet = "Sheet1", startRow = 2)
@@ -661,7 +763,9 @@ R20140714$Matrix <- "urine"
 
 # 20140716 EnegU run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol") # Sofia
+setwd("C:/Users/Laura/Documents/CYP2D6 metoprolol")
+
 R20140716 <- loadWorkbook("Metoprolol EnegU IS peaks.xlsx")
 setMissingValue(R20140716, value = "")
 R20140716 <- readWorksheet(R20140716, sheet = "Sheet1", startRow = 2)
@@ -699,7 +803,9 @@ R20140716$Matrix <- "urine"
 
 # 20140701 EnegP run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/CYP2D6 metoprolol") # Sofia
+setwd("C:/Users/Laura/Documents/CYP2D6 metoprolol")
+
 R20140701 <- loadWorkbook("Metoprolol EnegP IS peaks.xlsx")
 setMissingValue(R20140701, value = "")
 R20140701 <- readWorksheet(R20140701, sheet = "Sheet1", startRow = 2)
@@ -738,7 +844,9 @@ R20140701$Matrix[R20140701$SampType == "Master QC"] <- "urine"
 # SCOR DIG ===================================================
 # 20140327 Epos run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR DIG")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR DIG") # Sofia
+setwd("F:/SCOR DIG")
+
 R20140327 <- loadWorkbook("20140327 SCOR DIG Epos IS peaks.xlsx")
 setMissingValue(R20140327, value = "")
 R20140327 <- readWorksheet(R20140327, sheet = "Sheet1", startRow = 2)
@@ -781,7 +889,9 @@ R20140327 <- R20140327[R20140327$IS != "DIG", ]
 
 # 20140222 Epos run ==============================================
 
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR DIG")
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/SCOR DIG") # Sofia
+setwd("F:/SCOR DIG")
+
 R20140222 <- loadWorkbook("20140327 SCOR DIG Eneg IS peaks.xlsx")
 setMissingValue(R20140222, value = "")
 R20140222 <- readWorksheet(R20140222, sheet = "Sheet1", startRow = 2)
@@ -831,7 +941,8 @@ DF <- list(R20110211, R20110223, R20110620, R20141017,
            R20110504, R20120202, R20121008, R20130201,
            R20140222, R20140327, R20140630, R20140701,
            R20140714, R20140716, R20140930, R20141014,
-           R20141015, R20141117, R20141118)
+           R20141015, R20141117, R20141118, R20150209, 
+           R20150210)
 
 # Some of my data.frames had the class wrong for DateTime. Checking that.
 llply(DF, function(x) class(x$DateTime))
@@ -885,10 +996,11 @@ MQC.pos <- Data[Data$Mode == "Epos" & Data$SampType == "Master QC" &
 
 windows()
 ggplot(MQC.pos, aes(x = Date, y = Area, fill = Run)) + geom_boxplot() + 
-      facet_wrap(~ IS, scales = "free") + ggtitle("Master QC ESI+") +
+      facet_wrap(~ IS, scales = "free") + 
+      ggtitle("Master QC ESI+ for runs before 9/1/14") +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
-ggsave("Master QC Epos boxplot of IS peak areas.png", height = 8, width = 14)
+ggsave("Master QC Epos boxplot of IS peak areas pre 20140901.png", height = 8, width = 14)
 
 windows()
 ggplot(Epos, aes(x = Run, y = Area, fill = Run)) + geom_boxplot() + 
@@ -908,10 +1020,11 @@ MQC.neg <- Data[Data$Mode == "Eneg" & Data$SampType == "Master QC" &
 
 
 ggplot(MQC.neg, aes(x = Date, y = Area, fill = Run)) + geom_boxplot() + 
-      facet_wrap(~ IS, scales = "free") + ggtitle("Master QC ESI-") +
+      facet_wrap(~ IS, scales = "free") + 
+      ggtitle("Master QC ESI- before 9/1/14") +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
-ggsave("Master QC Eneg boxplot of IS peak areas.png", height = 8, width = 14)
+ggsave("Master QC Eneg boxplot of IS peak areas - pre 20140901.png", height = 8, width = 14)
 
 windows()
 ggplot(Eneg, aes(x = Run, y = Area, fill = Run)) + geom_boxplot() + 
@@ -940,7 +1053,6 @@ ggplot(LS.Epos, aes(x = Run, y = Area, fill = Run)) +
 ggsave("All recent Epos LS samples - boxplot of IS peak areas.png", 
        height = 8, width = 8)
 
-
 LS.Eneg <- LSrecent[LSrecent$Mode == "Eneg", ]
 
 ggplot(LS.Eneg, aes(x = Run, y = Area, fill = Run)) + 
@@ -950,7 +1062,6 @@ ggplot(LS.Eneg, aes(x = Run, y = Area, fill = Run)) +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ggsave("All recent Eneg LS samples - boxplot of IS peak areas.png", 
        height = 8, width = 8)
-
 
 
 # Checking RTs
@@ -1045,25 +1156,32 @@ TICsum <- ddply(TIC, c("File", "Mode", "Matrix", "Project", "Date"),
                 summarize, Sum = sum(Intensity))
 
 # Saving TIC data
+setwd("C:/Users/Laura/Documents/LCMS metabolomics")
 save(TIC, TICsum, file = "TIC data for randomly selected files.RData")
 
 
 # Making graphs of TIC over time ----------------------------------------------
 # Trying to think of best way to cut date...
 TICsum$Date2 <- cut(TICsum$Date, breaks = 5, labels = FALSE)
-TICsum$Year <- as.factor(year(TICsum$Date))
+TICsum$Date3 <- paste(month(TICsum$Date), year(TICsum$Date), sep = "-")
+TICsum <- arrange(TICsum, Date)
+TICsum$Date3 <- factor(TICsum$Date3, levels = unique(TICsum$Date3))
 
 TICsum <- TICsum[TICsum$Matrix != "serum", ]
 
 windows()
-ggplot(TICsum, aes(x = Year, y = Sum, fill = Project)) +
+ggplot(TICsum, aes(x = Date3, y = Sum, fill = Project)) +
       geom_boxplot() + 
-      facet_grid(Matrix ~ Mode)
+      xlab("Date") + theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+      facet_grid(Matrix ~ Mode) +
+      ggtitle("TIC sums for various projects over time\nNote that this is NOT the TCCsum. Up to 20 randomly selected files were included for each project.")
 ggsave("Boxplots comparing TICsum over time for various projects.png",
        height = 10, width = 12)
 
-ggplot(TICsum, aes(x = Date, y = Sum, color = Project)) +
+windows()
+ggplot(TICsum, aes(x = Date, y = Sum, color = Project, group = 1)) +
       geom_point() + 
+      stat_smooth() +
       facet_grid(Matrix ~ Mode)
 ggsave("Scatter plots comparing TICsum over time for various projects.png", 
        height = 10, width = 12)
