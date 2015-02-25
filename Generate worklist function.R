@@ -3,7 +3,7 @@
 # worklist starts and ends with a Master QC injection. 
 # Input: 
 #       1. Samples -- a data.frame with the following columns:
-#             a. Label - a vector of the sample IDs as you would like them 
+#             a. FileLabel - a vector of the sample IDs as you would like them 
 #             to show up in the file names. These must be unique and should NOT
 #             contain any special characters, including periods because it
 #             makes things more challenging downstream. They CAN contain spaces.
@@ -34,82 +34,90 @@
 #       run. (Defaults to 1)
 #       11. MQnum.end -- number of Master QC injections you'd like at the end of the run. 
 #       (Defaults to 1.)
+#       12. Initials -- defaults to "LS" and doesn't do anything unless 
+#       "Labels" is set to TRUE.
+#       13. Labels -- if set to TRUE, will create a data.frame "Labels" that 
+#       is set up to have 21 rows and up to 6 columns, just like the ToughTag 
+#       layout, for printing vial labels for samples. The format will be: 
+#       "Project SampleID dd/mm/yyyy Initials". Copy and paste this into Word 
+#       with the ToughTag template and print.
 ##    !!!   Set the seed if you want to create the same worklist every time you
 ###   !!!   run this script. i.e. set.seed(1234)
 
-worklist <- function(SampleID, Date, Project, Matrix, 
+worklist <- function(Samples, Date, Project, Matrix, 
                      Mode = c("Epos", "Eneg"),
                      FilePath, Column = "SB-Aq",
                      Qnum.start = 3, Qnum.end = 1, 
-                     MQnum.start = 1, MQnum.end = 1) {
+                     MQnum.start = 1, MQnum.end = 1,
+                     Initials = "LS", Labels = FALSE) {
       
       require(plyr)
       require(tidyr)
       require(dplyr)
       require(stringr)
       
-      Samples <- data.frame(SampleID = SampleID, 
-                            RandNum = rnorm(length(SampleID)))
+      Samples$RandNum <- rnorm(nrow(Samples))
       Samples <- arrange(Samples, RandNum)
+      Samples <- Samples[, c("SampleID", "FileLabel", "RandNum")]
       
       # Setting up QC injections
       Qnum.start <- Qnum.start-1
       Qnum <- Qnum.start + Qnum.end + round(nrow(Samples)/10)
-      QCsamp <- data.frame(SampleID = paste0("QC", 1:Qnum))
+      QCsamp <- data.frame(FileLabel = paste0("QC", 1:Qnum))
       QCsamp$VialPos <- "P1-A2"
       
       # Setting up Master QC injections
-      MQCsamp <- data.frame(SampleID = paste0("MQC", 1:(MQnum.start +
+      MQCsamp <- data.frame(FileLabel = paste0("MQC", 1:(MQnum.start +
                                                               MQnum.end)))
       MQCsamp$VialPos <- "P1-A1"
       
       if ("Epos" %in% Mode) {
             Samples$File.Epos <- paste(
                   Date, Project, paste0("Epos", toupper(str_sub(Matrix, 1, 1))),
-                                       Samples$SampleID)
+                                       Samples$FileLabel)
             QCsamp$File.Epos <- paste(
                   Date, Project, paste0("Epos", toupper(str_sub(Matrix, 1, 1))), 
-                                        QCsamp$SampleID)
+                                        QCsamp$FileLabel)
             MQCsamp$File.Epos <- paste(
                   Date, Project, paste0("Epos", toupper(str_sub(Matrix, 1, 1))),
-                  MQCsamp$SampleID)
+                  MQCsamp$FileLabel)
             
       }
       
       if ("Eneg" %in% Mode){
             Samples$File.Eneg <- paste(
                   Date, Project, paste0("Eneg", toupper(str_sub(Matrix, 1, 1))),
-                                       Samples$SampleID)
+                                       Samples$FileLabel)
             QCsamp$File.Eneg <- paste(
                   Date, Project, paste0("Eneg", toupper(str_sub(Matrix, 1, 1))),
-                  QCsamp$SampleID)
+                  QCsamp$FileLabel)
             MQCsamp$File.Eneg <- paste(
                   Date, Project, paste0("Eneg", toupper(str_sub(Matrix, 1, 1))),
-                  MQCsamp$SampleID)
+                  MQCsamp$FileLabel)
       }
       
       if ("Apos" %in% Mode){
             Samples$File.Apos <- paste(
                   Date, Project, paste0("Apos", toupper(str_sub(Matrix, 1, 1))),
-                  Samples$SampleID)
+                  Samples$FileLabel)
             QCsamp$File.Apos <- paste(
                   Date, Project, paste0("Apos", toupper(str_sub(Matrix, 1, 1))),
-                  QCsamp$SampleID)
+                  QCsamp$FileLabel)
             MQCsamp$File.Apos <- paste(
                   Date, Project, paste0("Apos", toupper(str_sub(Matrix, 1, 1))),
-                  MQCsamp$SampleID)
+                  MQCsamp$FileLabel)
       }
       
       if ("Aneg" %in% Mode){
             Samples$File.Aneg <- paste(
                   Date, Project, paste0("Aneg", toupper(str_sub(Matrix, 1, 1))),
-                  Samples$SampleID)
+                  Samples$FileLabel)
             QCsamp$File.Aneg <- paste(
                   Date, Project, paste0("Aneg", toupper(str_sub(Matrix, 1, 1))),
-                  QCsamp$SampleID)
+                  QCsamp$FileLabel)
             MQCsamp$File.Aneg <- paste(
                   Date, Project, paste0("Aneg", toupper(str_sub(Matrix, 1, 1))),
-                  MQCsamp$SampleID)
+                  MQCsamp$FileLabel)
       }
            
       # Setting the vial positions
@@ -143,14 +151,15 @@ worklist <- function(SampleID, Date, Project, Matrix,
                   MQCsamp[(MQnum.start+1):(MQnum.start+MQnum.end), ])
       
       Worklist <- rbind.fill(Worklist)
-      Worklist <- Worklist[, c("SampleID", "VialPos", 
+      Worklist <- Worklist[, c("SampleID", "FileLabel", "VialPos", 
                                names(Worklist)[names(Worklist) %in% 
                                                      paste0("File.", Mode)])]
       
       Worklist$InjectionOrder <- 1:nrow(Worklist)
       
       # Converting the worklist to long format
-      Worklist <- Worklist %>% gather(key, File, -SampleID, -VialPos, 
+      Worklist <- Worklist %>% gather(key, File, -SampleID, -FileLabel,
+                                      -VialPos, 
                                       -InjectionOrder) %>% 
             separate(key, c("type", "Mode"), "\\.")
       
@@ -176,13 +185,48 @@ worklist <- function(SampleID, Date, Project, Matrix,
       
       # Noting sample type
       Worklist$SampType <- "clinical"
-      Worklist$SampType[str_detect(Worklist$SampleID, "QC")] <- "QC"
-      Worklist$SampType[str_detect(Worklist$SampleID, "MQC")] <- "Master QC"
-      Worklist <- Worklist[, c("SampleID", "VialPos", "Method", "FilePath",
+      Worklist$SampType[str_detect(Worklist$FileLabel, "QC")] <- "QC"
+      Worklist$SampType[str_detect(Worklist$FileLabel, "MQC")] <- "Master QC"
+      
+      Worklist$SampleID[Worklist$SampType == "QC"] <- 
+            Worklist$FileLabel[Worklist$SampType == "QC"]
+      
+      Worklist$SampleID[Worklist$SampType == "Master QC"] <- 
+            Worklist$FileLabel[Worklist$SampType == "Master QC"]
+      
+      Worklist <- Worklist[, c("SampleID", "VialPos", "Method", 
+                               "FilePath", "FileLabel", 
                                "InjectionOrder", "Mode", "SampType", "File",
                                "Column")]
       
       return(Worklist)
+      
+      if (Labels == TRUE) {
+            Lab.string <- paste(Project, Samples$FileLabel, 
+                            format(ymd(Date), format="%m/%d/%Y"),
+                            Initials)
+            NCol <- length(Lab.string) %/% 21
+            LastCol <- length(Lab.string ) %% 21
+                   
+            Col <- list()
+            for (n in 1:NCol) {
+                  Col[[n]] <- Lab.string[((n-1)*21+1):(21*n)]
+            }
+            
+            Col[[NCol+1]] <- Lab.string[(NCol*21)+(1:LastCol)]
+            Col[[NCol+1]] <- c(Col[[NCol+1]], rep("", 21-LastCol))
+            
+            names(Col) <- LETTERS[1:(NCol+1)]
+            
+            template <- data.frame(A = Col[[1]])
+            for (n in 2:length(Col)) {
+                  template <- cbind(template, Col[[n]])
+            }
+            
+            names(template) <- names(Col)
+            
+            template <<- template
+      }
             
 }
 
