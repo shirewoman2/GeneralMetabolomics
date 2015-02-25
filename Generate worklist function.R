@@ -200,6 +200,8 @@ worklist <- function(Samples, Date, Project, Matrix,
                                "Column")]
       
       if (Labels == TRUE) {
+            Samples <- arrange(Samples, VialPos)
+            
             Lab.string <- paste(Project, Samples$FileLabel, 
                             format(ymd(Date), format="%m/%d/%Y"),
                             Initials)
