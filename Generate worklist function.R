@@ -12,8 +12,8 @@
 #             with the samples in your data.frame. These should follow 
 #             standard R requirements for column names and CAN contain 
 #             periods but NO spaces.
-#       2. Date -- a number for how you'd like to represent today's 
-#       date, which will be at the front of each file. No symbols allowed.
+#       2. Date -- a number for today's date in the format YYYYMMDD, which 
+#       will be at the front of each file. No symbols allowed.
 #       3. Project -- a brief abbreviation or code word for which project this
 #       is for. Example: "MnPS" or "SCOR MDZ".
 #       4. Matrix -- the sample matrix (this is set up to make a worklist for
@@ -37,8 +37,8 @@
 #       12. Initials -- defaults to "LS" and doesn't do anything unless 
 #       "Labels" is set to TRUE.
 #       13. Labels -- if set to TRUE, will create a data.frame "Labels" that 
-#       is set up to have 21 rows and up to 6 columns, just like the ToughTag 
-#       layout, for printing vial labels for samples. The format will be: 
+#       is set up to have 21 rows, just like the ToughTag layout, for 
+#       printing vial labels for samples. The format will be: 
 #       "Project SampleID dd/mm/yyyy Initials". Copy and paste this into Word 
 #       with the ToughTag template and print.
 ##    !!!   Set the seed if you want to create the same worklist every time you
@@ -57,7 +57,6 @@ worklist <- function(Samples, Date, Project, Matrix,
       require(stringr)
       
       Samples$RandNum <- rnorm(nrow(Samples))
-      Samples <- arrange(Samples, RandNum)
       Samples <- Samples[, c("SampleID", "FileLabel", "RandNum")]
       
       # Setting up QC injections
@@ -125,6 +124,7 @@ worklist <- function(Samples, Date, Project, Matrix,
                         rep(paste0(rep(LETTERS[1:6], each = 9), c(1:9)), 2))
       
       Samples$VialPos <- VialPos[3:(nrow(Samples) + 2)]
+      Samples <- arrange(Samples, RandNum)
       
       # Putting together the worklist
       Worklist <- list()
@@ -205,6 +205,10 @@ worklist <- function(Samples, Date, Project, Matrix,
             Lab.string <- paste(Project, Samples$FileLabel, 
                             format(ymd(Date), format="%m/%d/%Y"),
                             Initials)
+            Lab.string <- c(Lab.string, 
+                            paste(Project, "QC", 
+                                  format(ymd(Date), format="%m/%d/%Y"),
+                                  Initials))
             NCol <- length(Lab.string) %/% 21
             LastCol <- length(Lab.string ) %% 21
                    
