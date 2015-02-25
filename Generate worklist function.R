@@ -199,8 +199,6 @@ worklist <- function(Samples, Date, Project, Matrix,
                                "InjectionOrder", "Mode", "SampType", "File",
                                "Column")]
       
-      return(Worklist)
-      
       if (Labels == TRUE) {
             Lab.string <- paste(Project, Samples$FileLabel, 
                             format(ymd(Date), format="%m/%d/%Y"),
@@ -231,7 +229,9 @@ worklist <- function(Samples, Date, Project, Matrix,
             
             template <<- template
       }
-            
+      
+      return(Worklist)
+      
 }
 
 
