@@ -2,10 +2,16 @@
 # order is randomized, there is a QC injection every 10 injections, and the 
 # worklist starts and ends with a Master QC injection. 
 # Input: 
-#       1. SampleID - a vector of the sample IDs as you would like them 
+#       1. Samples -- a data.frame with the following columns:
+#             a. Label - a vector of the sample IDs as you would like them 
 #             to show up in the file names. These must be unique and should NOT
 #             contain any special characters, including periods because it
-#             makes things more challenging downstream.
+#             makes things more challenging downstream. They CAN contain spaces.
+#             b. SampleID -- a unique identifier that ties everything back to the 
+#             samples, something that will allow you to connect the worklist 
+#             with the samples in your data.frame. These should follow 
+#             standard R requirements for column names and CAN contain 
+#             periods but NO spaces.
 #       2. Date -- a number for how you'd like to represent today's 
 #       date, which will be at the front of each file. No symbols allowed.
 #       3. Project -- a brief abbreviation or code word for which project this
@@ -28,8 +34,11 @@
 #       run. (Defaults to 1)
 #       11. MQnum.end -- number of Master QC injections you'd like at the end of the run. 
 #       (Defaults to 1.)
+##    !!!   Set the seed if you want to create the same worklist every time you
+###   !!!   run this script. i.e. set.seed(1234)
 
-worklist <- function(SampleID, Date, Project, Matrix, Mode = c("Epos", "Eneg"),
+worklist <- function(SampleID, Date, Project, Matrix, 
+                     Mode = c("Epos", "Eneg"),
                      FilePath, Column = "SB-Aq",
                      Qnum.start = 3, Qnum.end = 1, 
                      MQnum.start = 1, MQnum.end = 1) {
@@ -38,8 +47,6 @@ worklist <- function(SampleID, Date, Project, Matrix, Mode = c("Epos", "Eneg"),
       require(tidyr)
       require(dplyr)
       require(stringr)
-      
-      set.seed(98032)
       
       Samples <- data.frame(SampleID = SampleID, 
                             RandNum = rnorm(length(SampleID)))
