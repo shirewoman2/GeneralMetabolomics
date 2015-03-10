@@ -61,22 +61,22 @@ worklist <- function(Samples, Date, Project, Matrix,
       
       # Setting up QC injections
       Qnum.start <- Qnum.start-1
-      Qnum <- Qnum.start + Qnum.end + round(nrow(Samples)/10)
+      Qnum <- Qnum.start + Qnum.end + nrow(Samples) %/%10 + 1
       QCsamp <- data.frame(FileLabel = paste0("QC", 1:Qnum))
       QCsamp$VialPos <- "P1-A2"
       
       # Setting up Master QC injections
       MQCsamp <- data.frame(FileLabel = paste0("MQC", 1:(MQnum.start +
-                                                              MQnum.end)))
+                                                               MQnum.end)))
       MQCsamp$VialPos <- "P1-A1"
       
       if ("Epos" %in% Mode) {
             Samples$File.Epos <- paste(
                   Date, Project, paste0("Epos", toupper(str_sub(Matrix, 1, 1))),
-                                       Samples$FileLabel)
+                  Samples$FileLabel)
             QCsamp$File.Epos <- paste(
                   Date, Project, paste0("Epos", toupper(str_sub(Matrix, 1, 1))), 
-                                        QCsamp$FileLabel)
+                  QCsamp$FileLabel)
             MQCsamp$File.Epos <- paste(
                   Date, Project, paste0("Epos", toupper(str_sub(Matrix, 1, 1))),
                   MQCsamp$FileLabel)
@@ -86,7 +86,7 @@ worklist <- function(Samples, Date, Project, Matrix,
       if ("Eneg" %in% Mode){
             Samples$File.Eneg <- paste(
                   Date, Project, paste0("Eneg", toupper(str_sub(Matrix, 1, 1))),
-                                       Samples$FileLabel)
+                  Samples$FileLabel)
             QCsamp$File.Eneg <- paste(
                   Date, Project, paste0("Eneg", toupper(str_sub(Matrix, 1, 1))),
                   QCsamp$FileLabel)
@@ -118,7 +118,7 @@ worklist <- function(Samples, Date, Project, Matrix,
                   Date, Project, paste0("Aneg", toupper(str_sub(Matrix, 1, 1))),
                   MQCsamp$FileLabel)
       }
-           
+      
       # Setting the vial positions
       VialPos <- paste0(rep(c("P1-", "P2-"), each = 54), # 6 rows, 9 columns 
                         rep(paste0(rep(LETTERS[1:6], each = 9), c(1:9)), 2))
@@ -129,26 +129,26 @@ worklist <- function(Samples, Date, Project, Matrix,
       # Putting together the worklist
       Worklist <- list()
       
-      for (i in 1:ceiling(nrow(Samples)/10)){
+      for (i in 1:(nrow(Samples) %/% 10)){
             Worklist[[i]] <- rbind.fill(QCsamp[i+Qnum.start, ],
-                                   Samples[
-                                         ((1+10*(i-1)):(10*i)), ])
+                                        Samples[
+                                              ((1+10*(i-1)):(10*i)), ])
       }
       
       if (nrow(Samples) %% 10 > 0) {
-            Worklist[[ceiling(nrow(Samples)/10)]] <- rbind.fill(
-                  QCsamp[Qnum-1, ],
+            Worklist[[nrow(Samples) %/% 10 + 1]] <- rbind.fill(
+                  QCsamp[nrow(Samples) %/% 10 + 2, ],
                   Samples[((nrow(Samples) %/% 10)*10+1):nrow(Samples), ])
       }
       
       Worklist[[1]] <- rbind.fill(MQCsamp[1:MQnum.start, ], 
                                   QCsamp[1:Qnum.start, ],
                                   Worklist[[1]])
-
-      Worklist[[ceiling(nrow(Samples)/10)]] <- 
-            rbind.fill(Worklist[[ceiling(nrow(Samples)/10)]], 
+      
+      Worklist[[nrow(Samples) %/% 10 + 1]] <- 
+            rbind.fill(Worklist[[nrow(Samples) %/% 10 + 1]], 
                        QCsamp[(Qnum-Qnum.end+1):Qnum, ],
-                  MQCsamp[(MQnum.start+1):(MQnum.start+MQnum.end), ])
+                       MQCsamp[(MQnum.start+1):(MQnum.start+MQnum.end), ])
       
       Worklist <- rbind.fill(Worklist)
       Worklist <- Worklist[, c("SampleID", "FileLabel", "VialPos", 
@@ -203,15 +203,15 @@ worklist <- function(Samples, Date, Project, Matrix,
             Samples <- arrange(Samples, VialPos)
             
             Lab.string <- paste(Project, Samples$FileLabel, 
-                            format(ymd(Date), format="%m/%d/%Y"),
-                            Initials)
+                                format(ymd(Date), format="%m/%d/%Y"),
+                                Initials)
             Lab.string <- c(Lab.string, 
                             paste(Project, "QC", 
                                   format(ymd(Date), format="%m/%d/%Y"),
                                   Initials))
             NCol <- length(Lab.string) %/% 21
             LastCol <- length(Lab.string ) %% 21
-                   
+            
             Col <- list()
             for (n in 1:NCol) {
                   Col[[n]] <- Lab.string[((n-1)*21+1):(21*n)]
@@ -235,7 +235,6 @@ worklist <- function(Samples, Date, Project, Matrix,
       return(Worklist)
       
 }
-
 
 # Example
 library(xlsx)
