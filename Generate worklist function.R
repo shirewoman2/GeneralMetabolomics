@@ -55,13 +55,14 @@ worklist <- function(Samples, Date, Project, Matrix,
       require(tidyr)
       require(dplyr)
       require(stringr)
+      require(lubridate)
       
       Samples$RandNum <- rnorm(nrow(Samples))
       Samples <- Samples[, c("SampleID", "FileLabel", "RandNum")]
       
       # Setting up QC injections
-      Qnum.start <- Qnum.start-1
-      Qnum <- Qnum.start + Qnum.end + nrow(Samples) %/%10 + 1
+      Qnum.start.2 <- Qnum.start-1
+      Qnum <- Qnum.start + Qnum.end + nrow(Samples) %/%10
       QCsamp <- data.frame(FileLabel = paste0("QC", 1:Qnum))
       QCsamp$VialPos <- "P1-A2"
       
@@ -130,19 +131,19 @@ worklist <- function(Samples, Date, Project, Matrix,
       Worklist <- list()
       
       for (i in 1:(nrow(Samples) %/% 10)){
-            Worklist[[i]] <- rbind.fill(QCsamp[i+Qnum.start, ],
+            Worklist[[i]] <- rbind.fill(QCsamp[i+Qnum.start.2, ],
                                         Samples[
                                               ((1+10*(i-1)):(10*i)), ])
       }
       
       if (nrow(Samples) %% 10 > 0) {
             Worklist[[nrow(Samples) %/% 10 + 1]] <- rbind.fill(
-                  QCsamp[nrow(Samples) %/% 10 + 2, ],
+                  QCsamp[nrow(Samples) %/% 10 + Qnum.start, ],
                   Samples[((nrow(Samples) %/% 10)*10+1):nrow(Samples), ])
       }
       
       Worklist[[1]] <- rbind.fill(MQCsamp[1:MQnum.start, ], 
-                                  QCsamp[1:Qnum.start, ],
+                                  QCsamp[1:Qnum.start.2, ],
                                   Worklist[[1]])
       
       Worklist[[nrow(Samples) %/% 10 + 1]] <- 
@@ -187,6 +188,8 @@ worklist <- function(Samples, Date, Project, Matrix,
       Worklist$SampType <- "clinical"
       Worklist$SampType[str_detect(Worklist$FileLabel, "QC")] <- "QC"
       Worklist$SampType[str_detect(Worklist$FileLabel, "MQC")] <- "Master QC"
+      
+      Worklist$SampleID <- as.character(Worklist$SampleID)
       
       Worklist$SampleID[Worklist$SampType == "QC"] <- 
             Worklist$FileLabel[Worklist$SampType == "QC"]
@@ -239,18 +242,30 @@ worklist <- function(Samples, Date, Project, Matrix,
 # Example
 library(xlsx)
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
-Meta <- read.xlsx("subject information north star metabolomics.xlsx", 
+Samples <- read.xlsx("subject information north star metabolomics.xlsx", 
                    sheetName = 4)
-SampleID <- as.character(Meta$LabID)
+Samples$FileLabel <- gsub("\\.", " ", as.character(Meta$LabID))
+Samples <- plyr::rename(Samples, c("LabID" = "SampleID"))
+Samples <- arrange(Samples, SampleID)
+Date <- 20150209
 Project <- "MnPS"
 Matrix <- "urine"
+Mode = c("Epos", "Eneg")
 FilePath <- "D:\\MassHunter\\Data\\Laura\\Mn exposure\\Mn exposure Puget Sound workers\\"
-Date <- 20150209
+Column = "SB-Aq"
+Qnum.start = 3
+Qnum.end = 1
+MQnum.start = 1
+MQnum.end = 1
+Initials = "LS"
+Labels = TRUE
 
-MyWorklist <- worklist(SampleID = SampleID, Date = Date, Project = Project, 
-                       Matrix = Matrix, FilePath = FilePath)
+MyWorklist <- worklist(Samples = Samples, Date = Date, Project = Project, 
+                       Matrix = Matrix, FilePath = FilePath, Labels = TRUE)
 
 # Checking that all the samples are in the worklist.
-SampleID %in% MyWorklist$SampleID
+Samples$SampleID %in% MyWorklist$SampleID
 
+# Checking that I don't have any replicate file names.
+anyDuplicated(Worklist$File)
 
