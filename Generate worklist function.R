@@ -139,17 +139,19 @@ worklist <- function(Samples, Date, Project, Matrix,
       if (nrow(Samples) %% 10 > 0) {
             Worklist[[nrow(Samples) %/% 10 + 1]] <- rbind.fill(
                   QCsamp[nrow(Samples) %/% 10 + Qnum.start, ],
-                  Samples[((nrow(Samples) %/% 10)*10+1):nrow(Samples), ])
+                  Samples[((nrow(Samples) %/% 10)*10+1):nrow(Samples), ], 
+                  QCsamp[(Qnum-Qnum.end+1):Qnum, ],
+                  MQCsamp[(MQnum.start+1):(MQnum.start+MQnum.end), ])
+      } else {
+            Worklist[[nrow(Samples)/10]] <- rbind.fill(
+                  Worklist[[nrow(Samples)/10]], 
+                  QCsamp[(Qnum-Qnum.end):(Qnum-1), ],
+                  MQCsamp[(MQnum.start+1):(MQnum.start+MQnum.end), ])
       }
       
       Worklist[[1]] <- rbind.fill(MQCsamp[1:MQnum.start, ], 
                                   QCsamp[1:Qnum.start.2, ],
                                   Worklist[[1]])
-      
-      Worklist[[nrow(Samples) %/% 10 + 1]] <- 
-            rbind.fill(Worklist[[nrow(Samples) %/% 10 + 1]], 
-                       QCsamp[(Qnum-Qnum.end+1):Qnum, ],
-                       MQCsamp[(MQnum.start+1):(MQnum.start+MQnum.end), ])
       
       Worklist <- rbind.fill(Worklist)
       Worklist <- Worklist[, c("SampleID", "FileLabel", "VialPos", 
@@ -238,7 +240,6 @@ worklist <- function(Samples, Date, Project, Matrix,
       return(Worklist)
       
 }
-
 # Example
 library(xlsx)
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
