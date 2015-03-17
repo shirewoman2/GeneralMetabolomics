@@ -214,18 +214,23 @@ worklist <- function(Samples, Date, Project, Matrix,
                             paste(Project, "QC", 
                                   format(ymd(Date), format="%m/%d/%Y"),
                                   Initials))
-            NCol <- length(Lab.string) %/% 21
-            LastCol <- length(Lab.string ) %% 21
+            NCol <- ceiling(length(Lab.string) / 21)
             
             Col <- list()
-            for (n in 1:NCol) {
+            for (n in 1:(NCol-1)) {
                   Col[[n]] <- Lab.string[((n-1)*21+1):(21*n)]
             }
             
-            Col[[NCol+1]] <- Lab.string[(NCol*21)+(1:LastCol)]
-            Col[[NCol+1]] <- c(Col[[NCol+1]], rep("", 21-LastCol))
+            if (length(Lab.string) %% 21 > 0){
+                  Col[[NCol]] <- Lab.string[((NCol-1)*21) + 
+                                                  (1:(length(Lab.string ) %% 21))]
+                  Col[[NCol]] <- c(Col[[NCol]], 
+                                   rep("", 21 - (length(Lab.string ) %% 21)))
+            } else {
+                  Col[[NCol]] <- Lab.string[((NCol-1)*21+1):(21*NCol)]
+            }
             
-            names(Col) <- LETTERS[1:(NCol+1)]
+            names(Col) <- LETTERS[1:(NCol)]
             
             template <- data.frame(A = Col[[1]])
             for (n in 2:length(Col)) {
@@ -240,6 +245,9 @@ worklist <- function(Samples, Date, Project, Matrix,
       return(Worklist)
       
 }
+
+
+
 # Example
 library(xlsx)
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
