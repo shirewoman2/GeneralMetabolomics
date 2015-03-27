@@ -248,7 +248,7 @@ worklist <- function(Samples, Date, Project, Matrix,
 
 
 
-# Example
+# Example --------------------------------------------
 library(xlsx)
 setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
 Samples <- read.xlsx("subject information north star metabolomics.xlsx", 
