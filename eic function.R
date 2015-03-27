@@ -7,8 +7,8 @@
 #             d. ionization mode (Mode)
 #             e. and matrix (Matrix) 
 #       2. Files = a data.frame with the following columns:
-#             a. the files (File)
-#             b. directory (Dir)
+#             a. the files, which should end with ".mzdata.xml" (File)
+#             b. directory (Directory)
 #             c. ionization mode (Mode)
 #             d. and matrix (Matrix)
 # for each file you want to extract the EIC data from.
@@ -33,8 +33,8 @@ eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
       
       for (i in 1:nrow(Files)){
             
-            setwd(Files$Dir[i])
-            RawData <- xcmsRaw(paste0(Files$File[i], ".mzdata.xml"), 
+            setwd(Files$Directory[i])
+            RawData <- xcmsRaw(Files$File[i], 
                                profstep = 0, profmethod = "bin")
             
             Dataset <- paste(Files$Mode[i], Files$Matrix[i], sep = ".")
