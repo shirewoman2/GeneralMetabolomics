@@ -42,10 +42,10 @@ TICplots <- function(Files, SampleID = FALSE, KeepTICs = FALSE){
                   facet_wrap(~ SampleID)
       }
       
-      Plot
-      
       if (KeepTICs == TRUE){
             TICs <<- TICs
       }
+      
+      Plot
       
 }
