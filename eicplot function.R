@@ -12,16 +12,29 @@ eicplot <- function(MF, EICs, Height = 8, Width = 8) {
       
       MF.df <- EICs[EICs$MassFeature == MF, ]
       
-      Plot <<- ggplot(MF.df, aes(x = RT, y = Intensity, color = File)) +
-            geom_line() + ggtitle(paste(MF.df$Mode[1], MF.df$Matrix[1], MF)) +
-            xlab("RT (min)") +
-            geom_vline(data = MF.df, aes(xintercept = RT.original),
-                       linetype = "dashed", size = 0.5, color = "gray50") +
-            theme(legend.position = "none") +
-            facet_wrap(~ Project, scales = "free")
-      Plot
-      ggsave(paste(MF.df$Mode[1], MF.df$Matrix[1], paste0(MF, ".png")),
-             height = Height, width = Width)
+      if("Project" %in% names(MF.df)){
+            
+            Plot <<- ggplot(MF.df, aes(x = RT, y = Intensity, color = File)) +
+                  geom_line() + ggtitle(paste(MF.df$Mode[1], MF.df$Matrix[1], MF)) +
+                  xlab("RT (min)") +
+                  geom_vline(data = MF.df, aes(xintercept = RT.original),
+                             linetype = "dashed", size = 0.5, color = "gray50") +
+                  theme(legend.position = "none") +
+                  facet_wrap(~ Project, scales = "free")
+            Plot
+            ggsave(paste(MF.df$Mode[1], MF.df$Matrix[1], paste0(MF, ".png")),
+                   height = Height, width = Width)
+      } else {
+            Plot <<- ggplot(MF.df, aes(x = RT, y = Intensity, color = File)) +
+                  geom_line() + ggtitle(paste(MF.df$Mode[1], MF.df$Matrix[1], MF)) +
+                  xlab("RT (min)") +
+                  geom_vline(data = MF.df, aes(xintercept = RT.original),
+                             linetype = "dashed", size = 0.5, color = "gray50") +
+                  theme(legend.position = "none")
+            Plot
+            ggsave(paste(MF.df$Mode[1], MF.df$Matrix[1], paste0(MF, ".png")),
+                   height = Height, width = Width)
+      }
 }
 
 
