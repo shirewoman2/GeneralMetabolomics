@@ -34,8 +34,7 @@ eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
       for (i in 1:nrow(Files)){
             
             setwd(Files$Directory[i])
-            RawData <- xcmsRaw(Files$File[i], 
-                               profstep = 0, profmethod = "bin")
+            RawData <- xcmsRaw(Files$File[i], profstep = 0, profmethod = "bin")
             
             Dataset <- paste(Files$Mode[i], Files$Matrix[i], sep = ".")
             
@@ -81,6 +80,7 @@ eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
       return(EIC)
       
 }
+
 
 # # EXAMPLE
 # # Loading data 
