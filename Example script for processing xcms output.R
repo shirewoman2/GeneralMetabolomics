@@ -35,7 +35,7 @@ for (j in Dataset){
       load(RDataFiles[j])
 }
 
-Data.filtered <- c(SulfEposP8.filter, SulfEnegP9.filter, 
+Data.filtered <- list(SulfEposP8.filter, SulfEnegP9.filter, 
                       SulfEposU10.filter, SFNEnegU11.filter)
 names(Data.filtered) <- Dataset
 
