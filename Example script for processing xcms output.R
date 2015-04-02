@@ -1,6 +1,6 @@
-# SFN preprocessing
+# Example processing script
 
-# This script preprocesses the data from xcms.
+# This script processes the data from xcms.
 
 
 # Housekeeping --------------------------------------------
@@ -27,14 +27,11 @@ names(Directory) <- Dataset
 MainDir <- c("C:/Users/Laura/Documents/Sulforaphane project")
 
 # Loading data
-RDataFiles <- c("SulfEposP8 - filtered dataframe only.RData", 
-                "SulfEnegP9 - filtered dataframe only.RData", 
-                "SulfEposU10 - filtered dataframe only.RData",
-                "SFNEnegU11 - filtered dataframe only.RData")
+RDataFiles <- paste(Dataset, "- filtered dataframe only.RData")
 names(RDataFiles) <- Dataset
 
 for (j in Dataset){
-      setwd(as.character(Directory[j]))
+      setwd(Directory[j])
       load(RDataFiles[j])
 }
 
@@ -46,9 +43,11 @@ names(Data.filtered) <- Dataset
 setwd(MainDir)
 load("SFN metadata.RData")
 
-GoodFiles <- subset(Files, Use == "use" & SampType %in% c("clinical", "QC"), 
-                    c("SampleID", "File", "Subject", "SampCode", "SampType",
-                      "Mode", "Matrix", "SampModeMat", "SampCol"))
+# Selecting the files that were used with the xcms script
+SampCol <- unlist(lapply(Data.filtered, function(x) names(x)))
+GoodFiles <- Files[Files$SampCol %in% SampCol, ]
+
+# Adding Dataset
 GoodFiles <- join(GoodFiles, Datasets, by = c("Mode", "Matrix"))
 
 # Breaking up by Dataset for matching elsewhere in script
@@ -171,7 +170,8 @@ for (j in Dataset){
 
 
 setwd(MainDir)
-png("Kernel density plots of MF abundances.png", height = 6, width = 8,
+png(paste(str_c(Dataset), "Kernel density plots of MF abundances.png"), 
+    height = 6, width = 8,
     units = "in", res=600)
 grid.arrange(Hist[[1]], Hist[[2]], Hist[[3]], Hist[[4]], ncol=2)
 dev.off()
