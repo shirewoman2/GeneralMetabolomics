@@ -35,7 +35,7 @@ for (j in Dataset){
       load(RDataFiles[j])
 }
 
-Data.filtered <- list(SulfEposP8.filter, SulfEnegP9.filter, 
+Data.filtered <- c(SulfEposP8.filter, SulfEnegP9.filter, 
                       SulfEposU10.filter, SFNEnegU11.filter)
 names(Data.filtered) <- Dataset
 
@@ -53,13 +53,13 @@ GoodFiles <- join(GoodFiles, Datasets, by = c("Mode", "Matrix"))
 # Breaking up by Dataset for matching elsewhere in script
 GoodFiles <- dlply(GoodFiles, "Dataset")
 
-Samples <- list()
+GoodSamples <- list()
 ClinSamples <- list()
 
 # Selecting only the columns of interest in the data and renaming them sensibly
 for (j in Dataset){
       
-      Samples[[j]] <- GoodFiles[[j]]$SampleID
+      GoodSamples[[j]] <- GoodFiles[[j]]$SampleID
       ClinSamples[[j]] <- GoodFiles[[j]]$SampleID[
             GoodFiles[[j]]$SampType == "clinical"]
       
@@ -121,19 +121,19 @@ Data.log <- list()
 for (j in Dataset){
       
       # Adding 1 to all sample columns
-      Data.filtered[[j]][ , Samples[[j]]] <- 
-            Data.filtered[[j]][ , Samples[[j]]] + 1
+      Data.filtered[[j]][ , GoodSamples[[j]]] <- 
+            Data.filtered[[j]][ , GoodSamples[[j]]] + 1
       
       # Calculate the TCC sum.
-      TCCsum <- apply(Data.filtered[[j]][ , Samples[[j]]], 
+      TCCsum <- apply(Data.filtered[[j]][ , GoodSamples[[j]]], 
                       2, sum, na.rm=TRUE)
       
       
       # Normalize each sample by the TCC sum. 
-      Data.TCCnorm[[j]] <- Data.filtered[[j]][ , Samples[[j]]]
-      for (s in 1:length(Samples[[j]])){
-            Data.TCCnorm[[j]][, Samples[[j]][s]] <- 
-                  (Data.filtered[[j]][, Samples[[j]][s]]/ 
+      Data.TCCnorm[[j]] <- Data.filtered[[j]][ , GoodSamples[[j]]]
+      for (s in 1:length(GoodSamples[[j]])){
+            Data.TCCnorm[[j]][, GoodSamples[[j]][s]] <- 
+                  (Data.filtered[[j]][, GoodSamples[[j]][s]]/ 
                          TCCsum[s])*1e6
             rm(s)
       }  
@@ -170,11 +170,20 @@ for (j in Dataset){
 
 
 setwd(MainDir)
-png(paste(str_c(Dataset), "Kernel density plots of MF abundances.png"), 
-    height = 6, width = 8,
-    units = "in", res=600)
-grid.arrange(Hist[[1]], Hist[[2]], Hist[[3]], Hist[[4]], ncol=2)
-dev.off()
+if (length(Dataset) == 2){
+      png(paste(str_c(Dataset, collapse = " "), "Kernel density plots of MF abundances.png"), 
+          height = 3, width = 8,
+          units = "in", res=600)
+      grid.arrange(Hist[[1]], Hist[[2]], ncol=2)
+      dev.off()
+      
+} else {
+      png(paste(str_c(Dataset, collapse = " "), "Kernel density plots of MF abundances.png"), 
+          height = 6, width = 8,
+          units = "in", res=600)
+      grid.arrange(Hist[[1]], Hist[[2]], Hist[[3]], Hist[[4]], ncol=2)
+      dev.off()
+}
 
 save(Data.log, Directory, Dataset, file="SFN main data.RData")
 
