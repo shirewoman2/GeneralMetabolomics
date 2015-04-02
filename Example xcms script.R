@@ -87,7 +87,7 @@ library(lubridate)
 
 # Set path of the working directory, i.e. the folder where your files are. 
 # Note that you need forward slashes!
-MainDir <- "F:/Progestin/Progestin raw data/ProgEnegP2"
+MainDir <- "F:/Progestin/ProgEnegP2"
 RawDataDir <- "F:/Progestin/Progestin raw data"
 
 # Loading metadata
@@ -259,6 +259,22 @@ rm(ProgEnegP2.xs1, ProgEnegP2.xs2, ProgEnegP2.xs3,
    ProgEnegP2.xs10, ProgEnegP2.xs11)
 
 
+# If you need to reload the xcmsSet objects b/c of a glitch or to remove 
+# specific files, uncomment and run the lines below:
+# setwd(RawDataDir)
+# load("ProgEnegP2 xs1.RData")
+# load("ProgEnegP2 xs2.RData")
+# load("ProgEnegP2 xs3.RData")
+# load("ProgEnegP2 xs4.RData")
+# load("ProgEnegP2 xs5.RData")
+# load("ProgEnegP2 xs6.RData")
+# load("ProgEnegP2 xs7.RData")
+# load("ProgEnegP2 xs8.RData")
+# load("ProgEnegP2 xs9.RData")
+# load("ProgEnegP2 xs10.RData")
+# load("ProgEnegP2 xs11.RData")
+
+
 # RT correction -------------------------------------------------------
 ProgEnegP2.tretcor.init <- Sys.time() 
 
@@ -397,7 +413,7 @@ write.csv(MFs, paste(Sys.Date(),
 write.csv(RandSamp, paste(Sys.Date(), 
                           "ProgEnegP2 randomly selected samples.csv"))
 
-LastSamp <- Samples[RandSamp[length(RandSamp)]]
+LastSamp <- GoodSamples[RandSamp[length(RandSamp)]]
 
 EIC.uncorrected <- list()
 EIC.corrected <- list()
@@ -510,6 +526,9 @@ Times <- Times[, c("Step", "Duration")]
 
 setwd(MainDir)
 write.csv(rbind(Times, TotalTime), "ProgEnegP2 processing times.csv", row.names=F)
+write.csv(data.frame(NumSamp = length(GoodSamples),
+                     PeakPickPerSamp = ProgEnegP2.tpick/length(GoodSamples)),
+          "ProgEnegP2 peak picking time per sample.csv", row.names=F)
 
 Times$Step <- factor(Times$Step, levels=Times$Step)
 
