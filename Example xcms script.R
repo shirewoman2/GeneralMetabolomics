@@ -1,5 +1,5 @@
 # ProgEnegP2 xcms
-# 3/31/15 LS
+# 4/2/15 LS
 
 # Notes to the users of this script ---------------------------------
 
@@ -103,11 +103,6 @@ GoodSamples <- paste0(Files$File[Files$Mode == IonizationMode &
 
 # Getting the names of the output data.frames' sample columns
 SampCol <- sub("mzdata.xml", "mzdata", make.names(GoodSamples))
-
-# Getting the name of the column that will contain the number of times
-# an ion was detected.
-CountCol <- make.names(basename(RawDataDir))
-
 
 
 # General functions ----------------------------------------------
@@ -326,14 +321,21 @@ ProgEnegP2.tfillPeaks <- as.numeric(difftime(ProgEnegP2.tfillPeaks.final,
                                              units="mins"))
 write.csv(ProgEnegP2.tfillPeaks, "ProgEnegP2 tfillPeaks.csv")
 
+setwd(MainDir)
+save(ProgEnegP2, file = "ProgEnegP2 xcmsSet object.RData")
+
 # Generate a data.frame with all the peaks ----------------------------------
 ProgEnegP2.tPeakTable.init <- Sys.time()
 
 # Making a data.frame of the recursively filled data
 ProgEnegP2.allpeaks <- peakTable(ProgEnegP2)
 
-# Changing the name of the count column
-names(ProgEnegP2.allpeaks)[names(ProgEnegP2.allpeaks) == CountCol] <- "Count"
+# Setting up a function to count length of columns with 0 or NA in the 
+# data before recursive peak filling step. Will filter by this later.
+Detected <- function(x) {length(x) - length(which(is.na(x) | x == 0))}
+# Counting
+ProgEnegP2.allpeaks$Count <- apply(ProgEnegP2.unfilled[, SampCol], 
+                                   MARGIN = 1, FUN = Detected)
 
 # Making a column with the mass feature name
 ProgEnegP2.allpeaks$MassFeature <- paste("I", round((
@@ -575,7 +577,6 @@ ggsave("ProgEnegP2 bar chart of numbers of mass features at each step.png")
 
 # Saving final workspace ------------------------------
 setwd(MainDir)
-save(ProgEnegP2, file = "ProgEnegP2 xcmsSet object.RData")
 # save.image("ProgEnegP2 workspace.RData") # This saves EVERYTHING that is 
 # currently in your workspace, which is a pretty huge file. Skip this step if 
 # you don't think you'll need that. 
