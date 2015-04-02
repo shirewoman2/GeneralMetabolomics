@@ -492,31 +492,12 @@ write.csv(ProgEnegP2.tQC, "ProgEnegP2 tQC.csv")
 setwd(RawDataDir)
 
 # Make a data.frame with all the times that each step required. 
-# Units for Times are in minutes. If ProgEnegP2.tpick doesn't exist,
-# probably none of the other time objects do, either, so read them
-# in from their respective files. If ProgEnegP2.tpick exists,
-# skip this step.
-ObjectCheck <- data.frame(
-      Objects = c("ProgEnegP2.tpick", "ProgEnegP2.tgroup",
-                  "ProgEnegP2.tretcor", "ProgEnegP2.tretcor",
-                  "ProgEnegP2.tgroup2", "ProgEnegP2.tfillPeaks",
-                  "ProgEnegP2.tPeakTable", "ProgEnegP2.tQC"),
-      File = c("ProgEnegP2 tpick.csv", "ProgEnegP2 tgroup.csv",
-               "ProgEnegP2 tretcor.csv", "ProgEnegP2 tgroup2.csv",
-               "ProgEnegP2 tfillPeaks.csv", "ProgEnegP2 tPeakTable.csv"),
-      Exists = exists(c(ProgEnegP2.tpick, ProgEnegP2.tgroup,
-                        ProgEnegP2.tretcor, ProgEnegP2.tretcor,
-                        ProgEnegP2.tgroup2, ProgEnegP2.tfillPeaks,
-                        ProgEnegP2.tPeakTable, ProgEnegP2.tQC)))
-
-if (any(ObjectCheck$Exists == FALSE)){
-      for (i in ObjectCheck$Exists == FALSE){
-            
-      }
-}
-
-
-if(exists("ProgEnegP2.tpick") == FALSE){
+# Units for Times are in minutes. If any of the objects required to 
+# construct "Times" don't exist, read all of them from file.
+if(any(exists(c(ProgEnegP2.tpick, ProgEnegP2.tgroup,
+                ProgEnegP2.tretcor, ProgEnegP2.tretcor,
+                ProgEnegP2.tgroup2, ProgEnegP2.tfillPeaks,
+                ProgEnegP2.tPeakTable, ProgEnegP2.tQC)) == FALSE)) {
       ProgEnegP2.tpick <- read.csv("ProgEnegP2 tpick.csv")[1,2]
       ProgEnegP2.tgroup <- read.csv("ProgEnegP2 tgroup.csv")[1,2]
       ProgEnegP2.tretcor <- read.csv("ProgEnegP2 tretcor.csv")[1,2]
@@ -525,7 +506,6 @@ if(exists("ProgEnegP2.tpick") == FALSE){
       ProgEnegP2.tPeakTable <- read.csv("ProgEnegP2 tPeakTable.csv")[1,2]
       ProgEnegP2.tQC <- read.csv("ProgEnegP2 tQC.csv")[1,2]
 }
-
 
 Times <- data.frame(rbind(ProgEnegP2.tpick, ProgEnegP2.tgroup, 
                           ProgEnegP2.tretcor, ProgEnegP2.tgroup2, 
