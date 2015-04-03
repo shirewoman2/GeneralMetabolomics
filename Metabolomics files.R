@@ -16,6 +16,75 @@ library(reshape2)
 MainDir <- "C:/Users/Laura/Documents/LCMS metabolomics"
 
 # Loading data ==================================================
+# Busulf --------------------------------------------------
+setwd("F:/Busulfan/Busulfan_Postdose_Data_10_2014")
+load("Busulfan retrospective tidy metadata.RData")
+
+BusulfFiles <- Meta
+rm(Meta, Meta.all, Meta.all.clin, Meta.clin)
+
+BusulfFiles <- plyr::rename(BusulfFiles, c("drugs.present.in.sample" = "Special",
+                                           "UPN" = "Subject"))
+BusulfFiles$Matrix <- "plasma"
+BusulfFiles$Date <- ymd(str_sub(BusulfFiles$File, 1, 8))
+BusulfFiles$Project <- "Busulf"
+BusulfFiles$Directory <- "F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_neg"
+BusulfFiles$Directory[BusulfFiles$Mode == "Epos"] <- 
+      "F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_pos"
+
+BusulfFiles <- BusulfFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
+                               "Matrix", "SampType", "Date", "Project", 
+                               "Directory")]
+
+# CHC2 ------------------------------------------------------------
+setwd("C:/Users/Laura/Documents/Farm Worker Families (CHC2)/CHC2 statistical analyses for DEOHS")
+library(xlsx)
+# I couldn't get R to read from the file "CHC2 metadata v3.xlsx" for some
+# reason, so this file is just the copied and "paste values"ed verion 
+# of the "metadata - long" tab of the former.
+CHC2Files <- read.xlsx("CHC2 metadata v3 long.xlsx", sheetName = "Sheet1",
+                       colClasses = rep("character", 17))
+CHC2Files <- plyr::rename(CHC2Files, c("Filename" = "File", 
+                                       "Use.this." = "Use", 
+                                       "Sample.type" = "SampType",
+                                       "Sample" = "SampleID",
+                                       "Date.run" = "Date"))
+CHC2Files$Mode[CHC2Files$Dataset == "EposU"] <- "Epos"
+CHC2Files$Mode[CHC2Files$Dataset == "EnegU"] <- "Eneg"
+
+CHC2Files$Matrix <- "urine"
+
+CHC2Files$Directory[CHC2Files$Mode == "Epos"] <- "F:/CHC2/EposU"
+CHC2Files$Directory[CHC2Files$Mode == "Eneg"] <- "F:/CHC2/EnegU"
+
+CHC2Files$SampType <- revalue(CHC2Files$SampType, c("M" = "Master QC",
+                                                    "Q" = "QC", 
+                                                    "U" = "clinical"))
+
+CHC2Files$Date <- mdy(CHC2Files$Date)
+
+CHC2Files <- subset(CHC2Files, , intersect(names(BusulfFiles), 
+                                           names(CHC2Files)))
+
+# CYP2D6 DEX ------------------------------------------------
+setwd("F:/CYP2D6 DEX")
+load("CYP2D6 metadata.RData")
+
+DEXFiles <- Meta.all
+DEXFiles$Matrix <- "urine"
+DEXFiles$Date <- mdy(str_sub(DEXFiles$File, 1, 8))
+DEXFiles$Project <- "CYP2D6 DEX"
+DEXFiles$Directory <- paste0("F:/CYP2D6 DEX/", DEXFiles$Dir)
+
+DEXFiles <- subset(DEXFiles, complete.cases(Dir), 
+                   intersect(names(BusulfFiles), names(DEXFiles)))
+
+
+# CYP2D6 Metoprolol -----------------------------------------
+### LEFT OFF HERE !!!!  ###
+
+
+
 # Original SCOR MDZ files -----------------------------------
 
 SCORDir <- c("G:/Data/Metabolomics/Laura/SCOR project/20110620 SCOR plasma/20130212 SCOR EposP VI", # EposP
@@ -95,63 +164,18 @@ rm(SCORmeta, SCORDir)
 
 
 # SFN files ---------------------------------------------
-setwd("F:/Sulforaphane")
-load("SFNSamples.RData")
+setwd("F:/Sulforaphane/All SFN mzdata files")
+load("SFN metadata.RData")
 
-SFNSamples$Special <- "baseline"
-SFNSamples$Special[SFNSamples$Effector == "rif" & SFNSamples$Day == "8"] <- 
-      "induced"
-SFNSamples$Date <- mdy(SFNSamples$Date)
+SFNFiles <- subset(Files, Exists = TRUE)
+SFNFiles$Directory <- "F:/Sulforaphane/All SFN mzdata files"
+SFNFiles$Project <- "SFN"
+SFNFiles <- join(SFNFiles, Samples, by = "SampleID", type = "left")
+SFNFiles$Special <- SFNFiles$InductStat
 
-# Finding all the correct directories for each file
-setwd("G:/Data/Metabolomics/Laura/Sulforaphane project")
-Directories1 <- dir('.')[file.info(dir('.',full.names=T))$isdir]
-Directories1 <- paste0("G:/Data/Metabolomics/Laura/Sulforaphane project/",
-                       Directories1)
+SFNFiles <- subset(SFNFiles, , intersect(names(SCORFiles), names(SFNFiles)))
 
-setwd("F:/Sulforaphane")
-Directories2 <- dir('.')[file.info(dir('.',full.names=T))$isdir]
-Directories2 <- paste0("F:/Sulforaphane/", Directories2)
-
-Directories <- c(Directories1, Directories2)
-
-AllSFNFiles <- list()
-
-for (d in 1:length(Directories)){
-      setwd(Directories[d])
-      DirFiles <- list.files(pattern = "*.mzdata.xml")
-      
-      if (length(DirFiles) > 0){
-            AllSFNFiles[[d]] <- data.frame(Directory = Directories[d],
-                                           File = DirFiles)
-            
-      }
-}
-
-AllSFNFiles <- rbind.fill(AllSFNFiles)
-AllSFNFiles$File <- sub(".mzdata.xml", "", AllSFNFiles$File)
-
-SFNSamples <- join(SFNSamples, AllSFNFiles, by = "File", type = "left")
-
-# Having a problem with the SFN metadata being incomplete (my fault).
-# Adding all the EnegP files in the directory G:\Data\Metabolomics\Laura\Sulforaphane project\20130605 Sulf EnegP mzData files
-# and will have to figure out metadata for them later. 
-setwd("G:/Data/Metabolomics/Laura/Sulforaphane project/20130605 Sulf EnegP mzData files")
-SFNEnegP <- data.frame(File = list.files(pattern = "*.mzdata.xml"),
-                       Mode = "Eneg",
-                       Matrix = "plasma", 
-                       Directory = "G:/Data/Metabolomics/Laura/Sulforaphane project/20130605 Sulf EnegP mzData files")
-SFNSamples <- rbind.fill(SFNSamples, SFNEnegP)
-SFNSamples$File <- sub(".mzdata.xml", "", SFNSamples$File)
-SFNSamples$Project <- "SFN"
-
-SFNSamples <- SFNSamples[complete.cases(SFNSamples$Directory), ]
-
-SFNFiles <- SFNSamples[, c("SampleID", "Subject", "TimePoint", "Matrix", 
-                           "Mode", "Date", "File", "Directory", "Project")]
-
-rm(AllSFNFiles, SFNEnegP, SFNSamples, DirFiles, Directories, Directories1, 
-   Directories2, d)
+rm(Files, Samples)
 
 # SCOR MDZ fragmentation files ----------------------------------------------
 # 10/27/14
@@ -302,24 +326,20 @@ MnPSFiles <- MnPSFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
                            "Matrix", "Date", "Project", "Directory")]
 
 
-# Busulf --------------------------------------------------
-setwd("F:/Busulfan/Busulfan_Postdose_Data_10_2014")
-load("Busulfan retrospective tidy metadata.RData")
 
-BusulfFiles <- Meta
-rm(Meta, Meta.all, Meta.all.clin, Meta.clin)
+# MnWI --------------------------------------------------
+setwd("F:/Mn exposure/Mn WI")
+load("MnWI metadata.RData")
 
-BusulfFiles <- plyr::rename(BusulfFiles, c("drugs.present.in.sample" = "Special",
-                                           "UPN" = "Subject"))
-BusulfFiles$Matrix <- "plasma"
-BusulfFiles$Date <- ymd(str_sub(BusulfFiles$File, 1, 8))
-BusulfFiles$Project <- "Busulf"
-BusulfFiles$Directory <- "F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_neg"
-BusulfFiles$Directory[BusulfFiles$Mode == "Epos"] <- 
-      "F:/Busulfan/Busulfan_Postdose_Data_10_2014/ESI_pos"
+MnWIFiles <- Files
+MnWIFiles <- plyr::rename(MnWIFiles, c("DateTime" = "Date"))
+MnWIFiles$Project <- "MnWI"
+MnWIFiles$Directory <- "F:/Mn exposure/Mn WI/MnWI raw data"
 
-BusulfFiles <- BusulfFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
-                           "Matrix", "Date", "Project", "Directory")]
+MnWIFiles <- subset(MnWIFiles, , intersect(names(SCORFiles), names(MnWIFiles)))
+
+rm(Files, Samples)
+
 
 
 # Putting all the files together ---------------------------------------
