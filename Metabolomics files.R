@@ -1,7 +1,7 @@
 # Metabolomics files
 
 # This script puts together a list of metabolomics files that I've generated
-# or used so that I can then search those files for specific ions.
+# or used.
 
 # Housekeeping ====================================================
 library(stringr)
@@ -21,7 +21,7 @@ setwd("F:/Busulfan/Busulfan_Postdose_Data_10_2014")
 load("Busulfan retrospective tidy metadata.RData")
 
 BusulfFiles <- Meta
-rm(Meta, Meta.all, Meta.all.clin, Meta.clin)
+rm(Meta, Meta.all, Meta.all.clin, Meta.clin, Clin)
 
 BusulfFiles <- plyr::rename(BusulfFiles, c("drugs.present.in.sample" = "Special",
                                            "UPN" = "Subject"))
@@ -62,30 +62,127 @@ CHC2Files$SampType <- revalue(CHC2Files$SampType, c("M" = "Master QC",
                                                     "U" = "clinical"))
 
 CHC2Files$Date <- mdy(CHC2Files$Date)
-
-CHC2Files <- subset(CHC2Files, , intersect(names(BusulfFiles), 
-                                           names(CHC2Files)))
+CHC2Files$Project <- "CHC2"
 
 # CYP2D6 DEX ------------------------------------------------
 setwd("F:/CYP2D6 DEX")
 load("CYP2D6 metadata.RData")
 
 DEXFiles <- Meta.all
+rm(Meta, Meta.all, Clin, NonexistentInjections, Samples.long, Dates, 
+   ExistentSamples)
+
 DEXFiles$Matrix <- "urine"
 DEXFiles$Date <- mdy(str_sub(DEXFiles$File, 1, 8))
 DEXFiles$Project <- "CYP2D6 DEX"
 DEXFiles$Directory <- paste0("F:/CYP2D6 DEX/", DEXFiles$Dir)
 
-DEXFiles <- subset(DEXFiles, complete.cases(Dir), 
-                   intersect(names(BusulfFiles), names(DEXFiles)))
-
 
 # CYP2D6 Metoprolol -----------------------------------------
-### LEFT OFF HERE !!!!  ###
+setwd("C:/Users/Laura/Documents/CYP2D6 metoprolol")
+MetopFiles <- read.csv("CYP2D6 metoprolol metadata.csv", skip=1, 
+                       na.strings=c("","NA", "#N/A", "Discontinued study", 
+                                    "#VALUE!", "has not run"))
+MetopFiles$SampleID <- as.character(MetopFiles$SampleID)
+
+MetopFiles <- plyr::rename(MetopFiles, c("PregStage" = "Special",
+                                       "SampleType" = "SampType"))
+
+MetopFiles <- subset(MetopFiles, , c("SampleID", "Subject", "Special",
+                                   "Matrix", "EposFile", "EnegFile", 
+                                   "SampType"))
+
+MetopFiles <- gather(MetopFiles, Mode, File, -SampleID, -Subject, -Special, 
+                    -Matrix, -SampType)
+MetopFiles$Mode <- revalue(MetopFiles$Mode, c("EposFile" = "Epos", 
+                                            "EnegFile" = "Eneg"))
+
+MetopFiles <- subset(MetopFiles, complete.cases(File))
+MetopFiles$Date <- ymd(str_sub(MetopFiles$File, 1, 8))
+MetopFiles$Project <- "CYP2D6 Metoprolol"
+MetopFiles$Directory[MetopFiles$Matrix == "urine" &
+                          MetopFiles$Mode == "Epos"] <- 
+      "F:/Metoprolol/Metoprolol EposU"
+MetopFiles$Directory[MetopFiles$Matrix == "urine" &
+                          MetopFiles$Mode == "Eneg"] <- 
+      "F:/Metoprolol/Metoprolol EnegU"
+MetopFiles$Directory[MetopFiles$Matrix == "plasma" &
+                          MetopFiles$Mode == "Epos"] <- 
+      "F:/Metoprolol/Metoprolol EposP"
+MetopFiles$Directory[MetopFiles$Matrix == "plasma" &
+                          MetopFiles$Mode == "Eneg"] <- 
+      "F:/Metoprolol/Metoprolol EnegP"
 
 
+# IVPO MDZ files --------------------------------------------------
+setwd("G:/Data/Metabolomics/Laura/IV MDZ project")
+load("IVPO MDZ metadata.RData")
 
-# Original SCOR MDZ files -----------------------------------
+IVPOFiles <- Files
+rm(Samples, Subjects, Visits, Files)
+IVPOFiles <- plyr::rename(IVPOFiles, c("SubjectID" = "Subject",
+                                       "DateTime" = "Date",
+                                       "DoseType" = "Special"))
+IVPOFiles$Project <- "IVPO MDZ"
+IVPOFiles$Directory <- "G:/Data/Metabolomics/Laura/IV MDZ project/IVPO MDZ raw data"
+
+
+# MnPS files ---------------------------------------------
+setwd("F:/Mn exposure/Mn exposure Puget Sound workers")
+load("Mn Puget Sound metadata.RData")
+MnPSFiles <- Meta
+rm(Meta)
+
+MnPSFiles <- plyr::rename(MnPSFiles, c("Group" = "Special", 
+                                       "SubjID" = "Subject"))
+MnPSFiles$SampleID <- as.character(MnPSFiles$SampleID)
+MnPSFiles$Date <- ymd(str_sub(MnPSFiles$File, 1,8))
+MnPSFiles$Project <- "MnPS"
+MnPSFiles$Directory <- "F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposure Puget Sound workers raw data"
+
+
+# MnWI --------------------------------------------------
+setwd("F:/Mn exposure/Mn WI")
+load("MnWI metadata.RData")
+
+MnWIFiles <- Files
+rm(Files, Samples, Subjects)
+
+MnWIFiles <- plyr::rename(MnWIFiles, c("DateTime" = "Date"))
+MnWIFiles$Project <- "MnWI"
+MnWIFiles$Directory <- "F:/Mn exposure/Mn WI/MnWI raw data"
+
+# Progestin files --------------------------------------------------------
+setwd("F:/Progestin")
+load("Progestin metadata.RData")
+
+ProgFiles <- Files
+ProgFiles <- join(ProgFiles, Samples[, c("SampleID", "Subject", "Visit")], 
+                  by = "SampleID", type = "left")
+ProgFiles <- plyr::rename(ProgFiles, c("DateTime" = "Date",
+                                       "Visit" = "Special"))
+
+rm(Files, Samples, Subjects)
+
+ProgFiles$Project <- "Progestin"
+ProgFiles$Directory <- "F:/Progestin/Progestin raw data"
+
+
+# SCOR DIG files ---------------------------------------------------
+setwd("F:/SCOR DIG")
+load("SCOR DIG metadata.RData")
+
+DIGFiles <- Meta.all
+DIGFiles <- plyr::rename(DIGFiles, c("DateTime" = "Date",
+                                     "Preg" = "Special"))
+
+DIGFiles$Project <- "SCOR DIG"
+DIGFiles$Directory <- "F:/SCOR DIG/SCOR DIG raw data"
+
+rm(Meta.all, Meta.clin, PK, PKType, Samples)
+
+
+# SCOR MDZ files -----------------------------------
 
 SCORDir <- c("G:/Data/Metabolomics/Laura/SCOR project/20110620 SCOR plasma/20130212 SCOR EposP VI", # EposP
              "G:/Data/Metabolomics/Laura/SCOR project/20120202 SCOR plasma and urine ESI neg", # EnegP
@@ -95,12 +192,7 @@ SCORDir <- c("G:/Data/Metabolomics/Laura/SCOR project/20110620 SCOR plasma/20130
 
 setwd("C:/Users/Laura/Documents/SCOR project")
 
-WB <- loadWorkbook("all SCOR samples.xlsx")
-setMissingValue(WB, value = "has not run")
-SCORmeta <- readWorksheet(WB, sheet = "ClinicalSampleRuns")
-
-names(SCORmeta)
-
+SCORmeta <- read.xlsx("all SCOR samples.xlsx", sheetName = "ClinicalSampleRuns")
 SCORmeta <- SCORmeta[, c("Sample.name", "Subject", "Matrix", 
                          "X3rd.trimester.or.post.partum",
                          "time.point", "ESI..file.name",
@@ -123,9 +215,9 @@ names(SCORmeta)
 # matrix. Fixing that for QC samples and just removing Master QC and blanks.
 SCORmeta <- SCORmeta[!(SCORmeta$Subject %in%  c("blank", "Master QC", 
                                                 "master QC", "water")), ]
-SCORmeta$SampleID[SCORmeta$Subject == "QC"] <- paste(
-      SCORmeta$SampleID[SCORmeta$Subject == "QC"], 
-      1:length(SCORmeta$SampleID[SCORmeta$Subject == "QC"]))
+SCORmeta$SampleID <- as.character(SCORmeta$SampleID)
+SCORmeta$SampleID[SCORmeta$Subject == "QC"] <- 
+      paste("QC", 1:length(SCORmeta$SampleID[SCORmeta$Subject == "QC"]))
 
 # Getting data into best format. Making dates character for easier back conversion
 SCORmeta$Date.Epos <- as.character(SCORmeta$Date.Epos)
@@ -159,23 +251,13 @@ SCORFiles$Directory[SCORFiles$Matrix == "urine" &
                           SCORFiles$Mode == "Eneg"] <- SCORDir[5]
 
 SCORFiles$Project <- "SCOR MDZ"
+SCORFiles$SampType <- "clinical"
+SCORFiles$SampType[SCORFiles$Subject == "QC"] <- "QC"
+
+SCORFiles <- subset(SCORFiles, complete.cases(File) & File != "has not run")
 
 rm(SCORmeta, SCORDir)
 
-
-# SFN files ---------------------------------------------
-setwd("F:/Sulforaphane/All SFN mzdata files")
-load("SFN metadata.RData")
-
-SFNFiles <- subset(Files, Exists = TRUE)
-SFNFiles$Directory <- "F:/Sulforaphane/All SFN mzdata files"
-SFNFiles$Project <- "SFN"
-SFNFiles <- join(SFNFiles, Samples, by = "SampleID", type = "left")
-SFNFiles$Special <- SFNFiles$InductStat
-
-SFNFiles <- subset(SFNFiles, , intersect(names(SCORFiles), names(SFNFiles)))
-
-rm(Files, Samples)
 
 # SCOR MDZ fragmentation files ----------------------------------------------
 # 10/27/14
@@ -199,9 +281,8 @@ SCOR20141027 <- data.frame(Project = "SCOR MDZ fragment",
                            Mode = c(rep("Epos", 6), "Eneg"))
 # 1/3/15
 setwd("C:/Users/Laura/Documents/SCOR project")
-WB <- loadWorkbook("Fragmentation plans - edited.xlsx")
-SCOR20150103 <- readWorksheet(WB, sheet = "worklist")
-
+SCOR20150103 <- read.xlsx("Fragmentation plans - edited.xlsx", 
+                          sheetName = "worklist")
 SCOR20150103$Project <- "SCOR MDZ fragment"
 SCOR20150103$Directory <- "F:/SCOR/20150103 SCOR MDZ fragmentation"
 SCOR20150103$Date <- ymd("20150103")
@@ -214,9 +295,8 @@ SCOR20150103 <- SCOR20150103[SCOR20150103$File !=
 
 # 1/26/15
 setwd("C:/Users/Laura/Documents/SCOR project/Fragmentation results and data files/20150126 SCOR MDZ fragmentation")
-WB <- loadWorkbook("20150126 SCOR MDZ fragmentation worklist.xlsx")
-SCOR20150126 <- readWorksheet(WB, sheet = "worklist")
-
+SCOR20150126 <- read.xlsx("20150126 SCOR MDZ fragmentation worklist.xlsx", 
+                          sheetName = "worklist")
 SCOR20150126 <- SCOR20150126[which(SCOR20150126$MSn == "MS"), ]
 SCOR20150126$Project <- "SCOR MDZ fragment"
 SCOR20150126$Directory <- "F:/SCOR/20150126 SCOR MDZ fragmentation"
@@ -226,44 +306,24 @@ SCOR20150126$SampleID <- SCOR20150126$Sample
 SCORFragmentFiles <- rbind.fill(SCOR20141027, 
                                 SCOR20150103,
                                 SCOR20150126)
-SCORFragmentFiles <- SCORFragmentFiles[, c("SampleID", "Matrix", "Mode", 
-                                           "Date", "File", "Project", 
-                                           "Directory")]
 
-rm(SCOR20141027, SCOR20150103, SCOR20150126, WB)
+rm(SCOR20141027, SCOR20150103, SCOR20150126)
 
 
 
-# Metoprolol files -----------------------------------------------
-setwd("C:/Users/Laura/Documents/CYP2D6 metoprolol")
+# SFN files ---------------------------------------------
+setwd("F:/Sulforaphane/All SFN mzdata files")
+load("SFN metadata.RData")
 
-MetopFiles <- read.csv("CYP2D6 metoprolol metadata.csv", skip=1, 
-                       na.strings=c("","NA", "#N/A", "Discontinued study", 
-                                    "#VALUE!", "has not run"))
-MetopFiles$SampleID <- as.character(MetopFiles$SampleID)
+SFNFiles <- subset(Files, Exists = TRUE)
+SFNFiles$Directory <- "F:/Sulforaphane/All SFN mzdata files"
+SFNFiles$Project <- "SFN"
+SFNFiles <- join(SFNFiles, Samples, by = "SampleID", type = "left")
+SFNFiles$Special <- SFNFiles$InductStat
+SFNFiles$Date <- mdy(SFNFiles$Date)
 
-MetopFiles <- gather(subset(MetopFiles, SampleType != "masterQC",
-                            c("SampleID", "Subject", "Matrix", "PregStage", 
-                              "EposFile", "EnegFile")), 
-                     Mode, File, -SampleID, -Subject, -Matrix, 
-                     -PregStage)
+rm(Files, Samples)
 
-MetopFiles$Mode <- revalue(MetopFiles$Mode, c("EposFile" = "Epos", 
-                                              "EnegFile" = "Eneg"))
-MetopFiles <- MetopFiles[complete.cases(MetopFiles$File), ]
-MetopFiles$Project <- "CYP2D6 Metoprolol"
-
-# Getting the directories
-MetopDir <- data.frame(Mode = rep(c("Epos", "Eneg"), 2),
-                       Matrix = rep(c("plasma", "urine"), each = 2),
-                       Directory = c("F:/Metoprolol/Metoprolol EposP",
-                                     "F:/Metoprolol/Metoprolol EnegP",
-                                     "F:/Metoprolol/Metoprolol EposU",
-                                     "F:/Metoprolol/Metoprolol EnegU"))
-MetopFiles <- join(MetopFiles, MetopDir, by = c("Mode", "Matrix"))
-MetopFiles <- plyr::rename(MetopFiles, c("PregStage" = "Special"))
-
-rm(MetopDir)
 
 
 # Whole blood vs plasma data ----------------------------------------
@@ -309,42 +369,16 @@ WBFiles$File <- sub(".d$", "", as.character(WBFiles$File))
 
 rm(WBFiles.Eneg)
 
-# MnPS metadata and file selection ---------------------------------------------
-setwd("F:/Mn exposure/Mn exposure Puget Sound workers")
-load("Mn Puget Sound metadata.RData")
-MnPSFiles <- Meta
-rm(Meta)
-
-MnPSFiles <- plyr::rename(MnPSFiles, c("Group" = "Special", 
-                                       "SubjID" = "Subject"))
-MnPSFiles$SampleID <- as.character(MnPSFiles$SampleID)
-MnPSFiles$Date <- ymd(str_sub(MnPSFiles$File, 1,8))
-MnPSFiles$Project <- "MnPS"
-MnPSFiles$Directory <- "F:/Mn exposure/Mn exposure Puget Sound workers/Mn exposure Puget Sound workers raw data"
-
-MnPSFiles <- MnPSFiles[, c("SampleID", "Subject", "Special", "File", "Mode",
-                           "Matrix", "Date", "Project", "Directory")]
-
-
-
-# MnWI --------------------------------------------------
-setwd("F:/Mn exposure/Mn WI")
-load("MnWI metadata.RData")
-
-MnWIFiles <- Files
-MnWIFiles <- plyr::rename(MnWIFiles, c("DateTime" = "Date"))
-MnWIFiles$Project <- "MnWI"
-MnWIFiles$Directory <- "F:/Mn exposure/Mn WI/MnWI raw data"
-
-MnWIFiles <- subset(MnWIFiles, , intersect(names(SCORFiles), names(MnWIFiles)))
-
-rm(Files, Samples)
-
-
 
 # Putting all the files together ---------------------------------------
-Files <- rbind.fill(SCORFiles, SFNFiles, SCORFragmentFiles, MetopFiles,
-                    MnPSFiles, WBFiles, BusulfFiles)
+Files <- rbind.fill(BusulfFiles, CHC2Files, DEXFiles, DIGFiles, IVPOFiles, 
+                    MetopFiles, MnPSFiles, MnWIFiles, ProgFiles, SCORFiles, 
+                    SCORFragmentFiles, SFNFiles, WBFiles)
+
+Files <- subset(Files, , c("Project", "SampleID", "Subject", "Special", 
+                           "SampType", "File", "Directory", 
+                           "Mode", "Matrix",
+                           "Date"))
 
 # Removing any missing files or directories. 
 Files <- Files[complete.cases(Files$File) & complete.cases(Files$Directory), ]
