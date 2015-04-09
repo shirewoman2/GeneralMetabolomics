@@ -494,10 +494,10 @@ setwd(RawDataDir)
 # Make a data.frame with all the times that each step required. 
 # Units for Times are in minutes. If any of the objects required to 
 # construct "Times" don't exist, read all of them from file.
-if(any(exists(c(ProgEnegP2.tpick, ProgEnegP2.tgroup,
-                ProgEnegP2.tretcor, ProgEnegP2.tretcor,
-                ProgEnegP2.tgroup2, ProgEnegP2.tfillPeaks,
-                ProgEnegP2.tPeakTable, ProgEnegP2.tQC)) == FALSE)) {
+if(any(exists(c("ProgEnegP2.tpick", "ProgEnegP2.tgroup",
+                "ProgEnegP2.tretcor", "ProgEnegP2.tretcor",
+                "ProgEnegP2.tgroup2", "ProgEnegP2.tfillPeaks",
+                "ProgEnegP2.tPeakTable", "ProgEnegP2.tQC")) == FALSE)) {
       ProgEnegP2.tpick <- read.csv("ProgEnegP2 tpick.csv")[1,2]
       ProgEnegP2.tgroup <- read.csv("ProgEnegP2 tgroup.csv")[1,2]
       ProgEnegP2.tretcor <- read.csv("ProgEnegP2 tretcor.csv")[1,2]
