@@ -8,24 +8,56 @@
 #             a. the mass feature (MassFeature)
 #             b. m/z (mz)
 #             c. RT in minutes (RT)
-#             d. ionization mode (Mode)
-#             e. and matrix (Matrix) 
+#             d. ionization mode, as in "Epos", "Eneg", "Apos", or "Aneg" (Mode)
+#             e. and matrix, as in "plasma", "urine", etc. (Matrix) 
 #       2. Files = a data.frame with the following columns:
-#             a. the files (File)
-#             b. directory (Dir)
+#             a. the names of the files, including ".mzdata.xml" (File)
+#             b. the directory (Directory)
 #             c. ionization mode (Mode)
 #             d. and matrix (Matrix)
 #       3. CameraList = the list output from running the camera function
+# Output: a data.frame with the following columns:
+#       1. Intensity - Intensity of the signal in counts
+#       2. Dataset - the dataset as the mode and the matrix together
+#       3. File - the file
+#       4. MassFeature - the input mass feature
+#       5. RT.original - the original RT of the mass feature in minutes
+#       6. Matrix - the matrix
+#       7. Mode - the mode
+#       8. MassFeature.otherion - what the potentially matching ion is, i.e. 
+#       "M if orig is M+K"
+#       9. RT - the retention time for plotting the EIC
+#       10. mz - the m/z of the potentially matching ion
+#       11. IonType - the  type of ion the originally detected ion could be, 
+#       i.e. "M+K"
+#       12. Charge - the charge of the potentially matching ion
+#       13. IsoGroup - if an isotope group was hypothesized (see CAMERA articles
+#       for an explanation), what that group was
+
 
 allions <- function(MF.df, Files, CameraList){
       
       require(plyr)
       require(dplyr)
+      require(stringr)
       
       OtherIonsIndex <- which(str_detect(names(CameraList), "otherions$"))
       Other.df <- CameraList[[OtherIonsIndex]]
       Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
-      Other.df$mz <- as.numeric(Other.df$Othermz)
+      for (m in 1:nrow(Other.df)){
+            if(complete.cases(Other.df$mzOfM[m])){
+                  Other.df$mz[m] <- as.numeric(Other.df$mzOfM[m])
+            } else {
+                  # If it's an adduct, look for the M+H or M-H ion since that's
+                  # likely the most abundant peak.
+                  if (str_detect(Other.df$Charge[m], "+")) {
+                        Other.df$mz[m] <- Other.df$NeutralMassOfM[m] + 1.0073
+                  } else {
+                        Other.df$mz[m] <- Other.df$NeutralMassOfM[m] - 1.0073
+                  }
+                  
+            }
+      }
       
       # No need to plot ions if the main ion is just M. Removing those.
       Other.df <- Other.df[Other.df$IonType != "M", ]
@@ -34,27 +66,39 @@ allions <- function(MF.df, Files, CameraList){
             
             for (m in 1:nrow(Other.df)){
                   if (Other.df$Charge[m] == "-" | Other.df$Charge[m] == "+") {
-                        Other.df$MassFeature.ion[m] <- paste("M if orig is", 
-                                                             Other.df$IonType[m])
+                        if (str_detect(Other.df$Charge[m], "+")){
+                              Other.df$MassFeature.otherion[m] <- 
+                                    paste("M+H if orig is", Other.df$IonType[m])
+                        } else {
+                              Other.df$MassFeature.otherion[m] <- 
+                                    paste("M-H if orig is", Other.df$IonType[m])
+                        }
                   } else {
-                        Other.df$MassFeature.ion[m] <- 
+                        Other.df$MassFeature.otherion[m] <- 
                               paste("ion with charge =", Other.df$Charge[m], 
                                     "\n if orig is", Other.df$IonType[m])
                   }
+                  
             }
       }
       
-      MF.df$MassFeature.ion <- "originally detected ion"
+      MF.df$MassFeature.otherion <- "originally detected ion"
       Other.df <- rbind.fill(Other.df, 
-                             MF.df[, c("MassFeature", "mz", "RT", "MassFeature.ion")])
+                             MF.df[, c("MassFeature", "mz", "RT", "MassFeature.otherion")])
       
       Other.df$Mode <- MF.df$Mode[1]
       Other.df$Matrix <- MF.df$Matrix[1]
       
+      # Removing redundant rows
+      Other.df <- subset(Other.df, MassFeature.otherion != "M+H if orig is M+H")
+      Other.df <- subset(Other.df, MassFeature.otherion != "M-H if orig is M-H")
+      
       EICs <- eic(Other.df, Files)
+      
       EICs <- join(EICs, Other.df[, c("MassFeature", "mz", "IonType", 
-                                      "Charge", "IsoGroup", "MassFeature.ion")], 
-                   by = c("MassFeature", "MassFeature.ion"))
+                                      "NeutralMassOfM", "Charge", "IsoGroup",
+                                      "MassFeature.otherion")], 
+                   by = c("MassFeature", "MassFeature.otherion"))
       return(EICs)
 }
 

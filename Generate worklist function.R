@@ -249,32 +249,32 @@ worklist <- function(Samples, Date, Project, Matrix,
 
 
 # Example --------------------------------------------
-library(xlsx)
-setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
-Samples <- read.xlsx("subject information north star metabolomics.xlsx", 
-                   sheetName = 4)
-Samples$FileLabel <- gsub("\\.", " ", as.character(Meta$LabID))
-Samples <- plyr::rename(Samples, c("LabID" = "SampleID"))
-Samples <- arrange(Samples, SampleID)
-Date <- 20150209
-Project <- "MnPS"
-Matrix <- "urine"
-Mode = c("Epos", "Eneg")
-FilePath <- "D:\\MassHunter\\Data\\Laura\\Mn exposure\\Mn exposure Puget Sound workers\\"
-Column = "SB-Aq"
-Qnum.start = 3
-Qnum.end = 1
-MQnum.start = 1
-MQnum.end = 1
-Initials = "LS"
-Labels = TRUE
-
-MyWorklist <- worklist(Samples = Samples, Date = Date, Project = Project, 
-                       Matrix = Matrix, FilePath = FilePath, Labels = TRUE)
-
-# Checking that all the samples are in the worklist.
-Samples$SampleID %in% MyWorklist$SampleID
-
-# Checking that I don't have any replicate file names.
-anyDuplicated(Worklist$File)
-
+# library(xlsx)
+# setwd("D:/Users/Laura/Documents/Work/Lin Lab/Mn exposure project")
+# Samples <- read.xlsx("subject information north star metabolomics.xlsx", 
+#                    sheetName = 4)
+# Samples$FileLabel <- gsub("\\.", " ", as.character(Meta$LabID))
+# Samples <- plyr::rename(Samples, c("LabID" = "SampleID"))
+# Samples <- arrange(Samples, SampleID)
+# Date <- 20150209
+# Project <- "MnPS"
+# Matrix <- "urine"
+# Mode = c("Epos", "Eneg")
+# FilePath <- "D:\\MassHunter\\Data\\Laura\\Mn exposure\\Mn exposure Puget Sound workers\\"
+# Column = "SB-Aq"
+# Qnum.start = 3
+# Qnum.end = 1
+# MQnum.start = 1
+# MQnum.end = 1
+# Initials = "LS"
+# Labels = TRUE
+# 
+# MyWorklist <- worklist(Samples = Samples, Date = Date, Project = Project, 
+#                        Matrix = Matrix, FilePath = FilePath, Labels = TRUE)
+# 
+# # Checking that all the samples are in the worklist.
+# Samples$SampleID %in% MyWorklist$SampleID
+# 
+# # Checking that I don't have any replicate file names.
+# anyDuplicated(Worklist$File)
+# 

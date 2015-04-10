@@ -2,17 +2,67 @@
 # This function processes an xcmsSet object using CAMERA to look for 
 # other ions that could arise from the same mass feature. Input is an
 # xcmsSet object (xset) and the ionization mode as "positive" or "negative".
+# Input is:
+#       1. a grouped xcmsSet object (xset)
+#       2. the ionization mode as "Epos", "Eneg", "Apos", or "Aneg" (Mode)
+#       3. the resolution in ppm to be used for matching adducts
+#       and isotopes (PPM); defaults to 15
+#       4. Since CAMERA looks at the correlation of chromatograms between ions
+#       as part of how it determines which ions are, in fact, adducts or isotopes,
+#       the p value cutoff required. True adducts and ions should correlate 
+#       quite well in the raw data, so the default is 0.0001. (PVal)
 # Output is a named list containing:
-#       1. the CAMERA object (suffix is .xsa)
-#       2. a data.frame of the output from CAMERA (.annot)
-#       3. a data.frame of other potential ions arising from the same compound as
-#          the original input mass feature (.otherions)
+#       1. the CAMERA object (root part of the name is whatever the input 
+#       xcmsSet object was called, suffix is .xsa)
+#       2. a data.frame of the output from CAMERA (.annot). There will be one row for
+#       every ion in the original data after the reference ions were removed. 
+#       Columns:
+#             a. the mass feature name (MassFeature), 
+#             b. the m/z (mz), 
+#             c. the retention time in minutes (RT), 
+#             d. any isotopes CAMERA thinks it has found (isotopes), 
+#             e. any adducts it thinks it has found (adduct), and 
+#             f. the pseudospectrum group (pcgroup). "Pseudospectra" are the 
+#             chromatograms that CAMERA hypothesizes could be related, i.e. they
+#             follow the same pattern in intensity. Pseudospectra do not necessarily
+#             have m/z that would actually make them the same compound, though, so
+#             think of grouping the ions into pseudospectra as simply the first 
+#             step in making a hypothesis about which ions might be related. 
+#       3. a data.frame (suffix is .otherions) where each row is an ion that had 
+#       at least one other potentially related ion, so >= 1 other isotope or 
+#       adduct. The columns are:
+#             a. MassFeature, 
+#             b. mz, 
+#             c. RT, 
+#             d. pseudospectrum group (pcgroup), 
+#             e. the type of ion CAMERA thinks this ion might be (IonType), 
+#             f. the possible charge of the ion (Charge), 
+#             g. the m/z of the other, potentially related ion (mzOfM), 
+#             h. and a group number where other ions with the same number
+#             are potentially isotopes of this one (IsoGroup). 
+
+
+# Nota bene: The xcmsSet object must have already had the group() function
+# applied to it or this will not work. That's something inherent in the 
+# CAMERA package, not something I implemented. The problem with that is that
+# you then have to run this on your ENTIRE dataset, which will be time 
+# consuming and RAM intensive if you've got very many samples. You can
+# always subset your xcmsSet object to contain only a handful of samples, but
+# then you have to redo the xcms::group() function and then, once you've
+# run that function, you'll have to figure out which ions correspond to which
+# in the full dataset.   - Laura
 
 camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       require(xcms)
       require(CAMERA)
       require(plyr)
       require(stringr)
+      
+      if(Mode %in% c("Epos", "Apos")){
+            Mode2 <- "positive"
+      } else {
+            Mode2 <- "negative"
+      }
       
       # Create a CAMERA object
       xsa <- xsAnnotate(xset)
@@ -32,14 +82,14 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       
       # Find the adducts within each pseudospectrum.
       xsa <- findAdducts(xsa, ppm = PPM, mzabs = 0.015, 
-                         multiplier = 3, polarity = Mode, 
+                         multiplier = 3, polarity = Mode2, 
                          rules = NULL, max_peaks = 100)
       
       # Make a table of the annotated peaks.
       xset.annot <- getPeaklist(xsa)
       
       # Once again, remove reference ions from the peak table.
-      ifelse(Mode == "positive",
+      ifelse(Mode %in% c("Epos", "Apos"),
              RefIons <- c(121.0509, 922.0098), # ESI+       
              RefIons <- c(112.9856, 119.0363, 980.015)) # ESI-
       
@@ -100,21 +150,21 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       IsoList <- data.frame(MassFeature = Iso$MassFeature,
                             mz = Iso$mz,
                             RT = Iso$RT, 
-                            pcgroup = Iso$pcgroup,
-                            IsoGroup = IsoGroup, 
-                            IonType = IonType, 
-                            Charge = Charge)
-      IsoList$IonType <- as.character(IsoList$IonType)
+                            pcgroup = as.numeric(as.character(Iso$pcgroup)),
+                            IsoGroup = as.numeric(as.character(IsoGroup)), 
+                            IonType = as.character(IonType), 
+                            Charge = as.character(Charge),
+                            stringsAsFactors = FALSE)
       
-      IsoList$Othermz <- NA
+      IsoList$mzOfM <- NA
       for (i in 1:nrow(IsoList)){
             
             if (IsoList$IonType[i] == "M") {
-                  IsoList$Othermz[i] <- IsoList$mz[i]
+                  IsoList$mzOfM[i] <- IsoList$mz[i]
             } else {
                   n <- as.numeric(str_sub(IsoList$IonType[i], 3, 3))
                   
-                  IsoList$Othermz[i] <- IsoList$mz[i] - n * 1.00866
+                  IsoList$mzOfM[i] <- IsoList$mz[i] - n * 1.00866
                   
             }
             
@@ -135,7 +185,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       # Split the adduct column into one list for every possible adduct with 
       # each list having 4 pieces:
       # 1. IonType = type of adduct, eg. M+Cl
-      # 2. mz.adduct = the m/z of that particular adduct
+      # 2. NeutralMassOfM = the neutral mass of that particular adduct
       # 3. MassFeature 
       # 4. pcgroup
       
@@ -146,7 +196,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
             
             IonType <- c()
             Charge <- c()
-            Othermz <- c()
+            NeutralMassOfM <- c()
             
             for (m in 2:length(AdSplit[[i]])){
                   
@@ -156,16 +206,19 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                   Charge[m-1] <- unlist(str_extract(AdSplit[[i]][m], "\\].{1,2}"))
                   Charge[m-1] <- str_trim(gsub("\\]", "", Charge[m-1]))
                   
-                  Othermz[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
+                  NeutralMassOfM[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
             }
             
             AdList[[i]] <- data.frame(MassFeature = Adduct$MassFeature[i],
                                       mz = Adduct$mz[i],
                                       RT = Adduct$RT[i],
-                                      pcgroup = Adduct$pcgroup[i],
+                                      pcgroup = as.numeric(as.character(
+                                            Adduct$pcgroup[i])),
                                       IonType = IonType,
                                       Charge = Charge,
-                                      Othermz = as.numeric(Othermz))
+                                      NeutralMassOfM = 
+                                            as.numeric(NeutralMassOfM),
+                                      stringsAsFactors = FALSE)
       }
       
       AdList <- rbind.fill(AdList)
@@ -183,12 +236,3 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       
 }
 
-
-# # EXAMPLE
-# setwd("F:/SCOR/20120202 SCOR plasma and urine ESI neg")
-# load("SCORMDZEnegP83 workspace.RData")
-# 
-# EnegP83.otherions <- camera(SCORMDZEnegP83, "negative")
-# 
-# SCORMDZEnegP83.annot <- EnegP83.otherions[["SCORMDZEnegP83.annot"]]
-# OtherIons <- EnegP83.otherions[["SCORMDZEnegP83.otherions"]]

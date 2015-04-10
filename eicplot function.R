@@ -1,6 +1,8 @@
 # eicplot function ----------------------------------------
 # This function plots EICs of the mass feature of interest, facetted by 
-# project. It creates a new ggplot2 object, "Plot", that can be further modified.
+# project if you input a project if Project is one of the columns in the
+# input data.frame. It creates a new ggplot2 object, "Plot", that can be 
+# further modified.
 # Input: 
 #       1. MF = a character string listing the mass feature of interest
 #       2. EICs = a data.frame with all the EIC info already extracted; this 

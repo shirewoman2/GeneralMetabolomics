@@ -9,7 +9,7 @@
 #       e. Matrix (character or factor)
 # 2. Files = a data.frame with the following columns:
 #       a. the files (File)
-#       b. directory (Dir)
+#       b. directory (Directory)
 #       c. ionization mode (Mode)
 #       d. and matrix (Matrix)
 # 3. Ions, a list of which ions you want or the specific m/z to use. Specific 
@@ -59,7 +59,7 @@ specifions <- function(MF.df, Files, Ions) {
       
       EICs <- eic(MF.df, Files)
       EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
-                   by = c("MassFeature", "MassFeature.ion"))
+                   by = c("MassFeature"))
       return(EICs)
       
 }

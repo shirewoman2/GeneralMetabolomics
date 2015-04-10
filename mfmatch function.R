@@ -1,8 +1,8 @@
 # mfmatch function --------------------------------------------------
 
-# This function will take two data.frames, X and Y (they can be called
-# something other than that), and output a list of which mass features match 
-# which in the other dataset. Data.frames must include the following columns:
+# This function will take two data.frames, X and Y, and output a data.frame  
+# listing which mass features match which in the other dataset. Data.frames 
+# must include the following columns:
 #       1. MassFeature
 #       2. mz
 #       3. RT
@@ -20,7 +20,9 @@
 #
 # !!! Important: If one of the data.frames includes compounds whose RT you 
 # don't know, make that one Y. For somewhat arcane reasons, this works 
-# much better.  !!! #
+# much better. !!! 
+# If one of the datasets is much longer than the other, as long as it doesn't 
+# have any missing values for RT, make the shorter one X. It will go faster.
 
 
 mfmatch <- function(X, Y, PPM = 15, RTRange = 0.2){

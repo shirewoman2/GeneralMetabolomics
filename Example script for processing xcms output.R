@@ -185,5 +185,6 @@ if (length(Dataset) == 2){
       dev.off()
 }
 
-save(Data.log, Directory, Dataset, file="SFN main data.RData")
+save(Data.log, Directory, Dataset, 
+     file=paste(str_c(Dataset, collapse = " "), "SFN main data.RData"))
 

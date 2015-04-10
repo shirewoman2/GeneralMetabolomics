@@ -4,15 +4,24 @@
 #             a. the mass feature (MassFeature)
 #             b. m/z (mz)
 #             c. RT in minutes (RT)
-#             d. ionization mode (Mode)
-#             e. and matrix (Matrix) 
+#             d. ionization mode as "Epos", "Eneg", "Apos", or "Aneg" (Mode)
+#             e. and matrix as "plasma", "urine", etc. (Matrix) 
 #       2. Files = a data.frame with the following columns:
 #             a. the files, which should end with ".mzdata.xml" (File)
 #             b. directory (Directory)
 #             c. ionization mode (Mode)
 #             d. and matrix (Matrix)
 # for each file you want to extract the EIC data from.
-# Column names must match. Output is a data.frame.
+# Output is a data.frame with the following columns:
+#       1. Intensity - the counts for the input m/z
+#       2. Dataset - the "dataset", the Mode and Matrix pasted together for 
+#       matching things downstream
+#       3. File - the file used
+#       4. MassFeature - the input mass feature
+#       5. RT.original - the input mass feature's RT in minutes.
+#       6. Matrix
+#       7. Mode
+#       8. RT - the RT in minutes of the extracted ion chromatogram for plotting.
 
 
 eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
@@ -59,8 +68,9 @@ eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
                   EIC[[i]][[m]]$Matrix <- MF.list[[Dataset]]$Matrix[m]
                   EIC[[i]][[m]]$Mode <- MF.list[[Dataset]]$Mode[m]
                   
-                  if ("MassFeature.ion" %in% names(MF.df)) {
-                        EIC[[i]][[m]]$MassFeature.ion <- MF.df$MassFeature.ion[m]
+                  if ("MassFeature.otherion" %in% names(MF.df)) {
+                        EIC[[i]][[m]]$MassFeature.otherion <- 
+                              MF.df$MassFeature.otherion[m]
                   }
                   
             }
