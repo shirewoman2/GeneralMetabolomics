@@ -156,7 +156,6 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                             Charge = as.character(Charge),
                             stringsAsFactors = FALSE)
       
-      IsoList$mzOfM <- NA
       for (i in 1:nrow(IsoList)){
             
             if (IsoList$IonType[i] == "M") {
@@ -185,7 +184,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       # Split the adduct column into one list for every possible adduct with 
       # each list having 4 pieces:
       # 1. IonType = type of adduct, eg. M+Cl
-      # 2. NeutralMassOfM = the neutral mass of that particular adduct
+      # 2. mzOfM = the neutral mass of that particular adduct
       # 3. MassFeature 
       # 4. pcgroup
       
@@ -196,7 +195,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
             
             IonType <- c()
             Charge <- c()
-            NeutralMassOfM <- c()
+            mzOfM <- c()
             
             for (m in 2:length(AdSplit[[i]])){
                   
@@ -206,7 +205,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                   Charge[m-1] <- unlist(str_extract(AdSplit[[i]][m], "\\].{1,2}"))
                   Charge[m-1] <- str_trim(gsub("\\]", "", Charge[m-1]))
                   
-                  NeutralMassOfM[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
+                  mzOfM[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
             }
             
             AdList[[i]] <- data.frame(MassFeature = Adduct$MassFeature[i],
@@ -216,8 +215,8 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                                             Adduct$pcgroup[i])),
                                       IonType = IonType,
                                       Charge = Charge,
-                                      NeutralMassOfM = 
-                                            as.numeric(NeutralMassOfM),
+                                      mzOfM = 
+                                            as.numeric(mzOfM),
                                       stringsAsFactors = FALSE)
       }
       
