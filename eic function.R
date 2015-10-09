@@ -67,10 +67,15 @@ eic <- function(MF.df, Files, ppm = 15, PrintProgress = FALSE) {
                   EIC[[i]][[m]]$RT.original <- MF.list[[Dataset]]$RT[m]
                   EIC[[i]][[m]]$Matrix <- MF.list[[Dataset]]$Matrix[m]
                   EIC[[i]][[m]]$Mode <- MF.list[[Dataset]]$Mode[m]
-                  
+                                    
                   if ("MassFeature.otherion" %in% names(MF.df)) {
                         EIC[[i]][[m]]$MassFeature.otherion <- 
                               MF.df$MassFeature.otherion[m]
+                  }
+                  
+                  if ("MassFeature.ion" %in% names(MF.df)) {
+                        EIC[[i]][[m]]$MassFeature.ion <- 
+                              MF.df$MassFeature.ion[m]
                   }
                   
             }
