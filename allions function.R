@@ -40,10 +40,16 @@ allions <- function(MF.df, Files, CameraList){
       require(plyr)
       require(dplyr)
       require(stringr)
+      require(xcms)
+      
+      OrigDir <- getwd()
+      setwd("I:/General LCMS scripts")
+      source("eic function.R")
+      setwd(OrigDir)
       
       OtherIonsIndex <- which(str_detect(names(CameraList), "otherions$"))
       Other.df <- CameraList[[OtherIonsIndex]]
-      Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
+      Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature[1], ]
       for (m in 1:nrow(Other.df)){
             if(complete.cases(Other.df$mzOfM[m])){
                   Other.df$mz[m] <- as.numeric(Other.df$mzOfM[m])
@@ -51,9 +57,9 @@ allions <- function(MF.df, Files, CameraList){
                   # If it's an adduct, look for the M+H or M-H ion since that's
                   # likely the most abundant peak.
                   if (str_detect(Other.df$Charge[m], "+")) {
-                        Other.df$mz[m] <- Other.df$NeutralMassOfM[m] + 1.0073
+                        Other.df$mz[m] <- Other.df$mzOfM[m] + 1.0073
                   } else {
-                        Other.df$mz[m] <- Other.df$NeutralMassOfM[m] - 1.0073
+                        Other.df$mz[m] <- Other.df$mzOfM[m] - 1.0073
                   }
                   
             }
@@ -96,7 +102,7 @@ allions <- function(MF.df, Files, CameraList){
       EICs <- eic(Other.df, Files)
       
       EICs <- join(EICs, Other.df[, c("MassFeature", "mz", "IonType", 
-                                      "NeutralMassOfM", "Charge", "IsoGroup",
+                                      "mzOfM", "Charge", "IsoGroup",
                                       "MassFeature.otherion")], 
                    by = c("MassFeature", "MassFeature.otherion"))
       return(EICs)
