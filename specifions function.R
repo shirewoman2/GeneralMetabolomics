@@ -13,12 +13,22 @@
 #       c. ionization mode (Mode)
 #       d. and matrix (Matrix)
 # 3. Ions, a list of which ions you want or the specific m/z to use. Specific 
-#    ions to call by name are: "M+Na", "M+1", "M+2", "M+3", "M+Cl", "M-H2O".
-# !!!!! You must have sourced the function "eic" for this to run. !!!!!
+#    ions to call by name are: "M+Na", "M+1", "M+2", "M+3", "M+Cl", "M-H2O", 
+#    "M-1", "M-2", "M-3". Default is all of those.
+# Output is data.frame with all the EICs.
 
-specifions <- function(MF.df, Files, Ions) {
+
+
+specifions <- function(MF.df, Files, Ions = c("M+Na", "M+1", "M+2", "M+3", 
+                                              "M+Cl", "M-H2O", "M-1", "M-2", 
+                                              "M-3")) {
       
       require(plyr)
+      
+      OrigDir <- getwd()
+      setwd("I:/General LCMS scripts")
+      source("eic function.R")
+      setwd(OrigDir)
       
       PossibleIons <- data.frame(Ion = c("M+Na", 
                                          "M+1", 
@@ -58,8 +68,16 @@ specifions <- function(MF.df, Files, Ions) {
       }
       
       EICs <- eic(MF.df, Files)
-      EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
-                   by = c("MassFeature"))
+      if ("MassFeature.ion" %in% names(EICs) & 
+                "MassFeature.ion" %in% names(MF.df)){
+            EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
+                         by = c("MassFeature", "MassFeature.ion"))
+      } else {
+            EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
+                         by = c("MassFeature"))
+      }
+      
+      
       return(EICs)
       
 }
