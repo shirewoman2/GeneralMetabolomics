@@ -19,9 +19,9 @@
 
 
 
-specifions <- function(MF.df, Files, Ions = c("M+Na", "M+1", "M+2", "M+3", 
-                                              "M+Cl", "M-H2O", "M-1", "M-2", 
-                                              "M-3")) {
+specifions <- function(MF.df, Files, 
+                       Ions = c("M+Na", "M-Na", "M+1", "M+2", "M-1", "M-2", 
+                                "M-H2O", "M+H2O")) {
       
       require(plyr)
       
@@ -30,24 +30,32 @@ specifions <- function(MF.df, Files, Ions = c("M+Na", "M+1", "M+2", "M+3",
       source("eic function.R")
       setwd(OrigDir)
       
-      PossibleIons <- data.frame(Ion = c("M+Na", 
+      PossibleIons <- data.frame(Ion = c("M+Na",
+                                         "M-Na",
+                                         "M+Cl", 
+                                         "M-Cl",
+                                         "M+H2O",
+                                         "M-H2O",
                                          "M+1", 
                                          "M+2", 
                                          "M+3",
-                                         "M+Cl", 
-                                         "M-H2O",
                                          "M-1",
                                          "M-2", 
                                          "M-3"),
-                                 MassAdd = c(22.98977- 1.0073, # positive mode: If molecule gains Na, wouldn't also gain H
+                                 MassAdd = c(22.98977- 1.0073, 
+                                             -22.98977+ 1.0073,
+                                             34.96885+1.0073, 
+                                             -34.96885-1.0073, 
+                                             18.01056,
+                                             -18.01056,
                                              1.008665,
                                              2*1.008665,
                                              3*1.008665,
-                                             34.96885+1.0073, # negative mode: If molecule gains Cl, wouldn't also lose H
-                                             -18.01056,
                                              -1.008665,
                                              -2*1.008665,
-                                             -3*1.008665))
+                                             -3*1.008665),
+                                 Mode = c("pos", "pos", "neg", "neg", 
+                                          rep(NA, 8)))
       
       MF.df$MassFeature.ion <- "originally detected ion"
       
