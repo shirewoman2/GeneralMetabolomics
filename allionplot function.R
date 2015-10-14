@@ -5,20 +5,33 @@
 # Input: the data.frame output from the function "allion".
 
 allionplot <- function(allion.df, Height = 8, Width = 8, 
-                       FileSuffix = "- all ions.png") {
+                       FileSuffix = "- all ions.png", Project = FALSE) {
       
       require(ggplot2)
       
-      Plot.allion <<- ggplot(allion.df, aes(x = RT, y = Intensity, 
-                                            color = File)) +
-            geom_line() + ggtitle(paste(allion.df$Mode[1], 
-                                        allion.df$Matrix[1], 
-                                        allion.df$MassFeature[1])) +
-            xlab("RT (min)") +
-            geom_vline(data = allion.df, aes(xintercept = RT.original),
-                       linetype = "dashed", size = 0.5, color = "gray50") +
-            theme(legend.position = "none") +
-            facet_grid(MassFeature.ion ~ Project, scales = "free")
+      if (Project == TRUE){
+            Plot.allion <<- ggplot(allion.df, aes(x = RT, y = Intensity, 
+                                                  color = File)) +
+                  geom_line() + ggtitle(paste(allion.df$Mode[1], 
+                                              allion.df$Matrix[1], 
+                                              allion.df$MassFeature[1])) +
+                  xlab("RT (min)") +
+                  geom_vline(data = allion.df, aes(xintercept = RT.original),
+                             linetype = "dashed", size = 0.5, color = "gray50") +
+                  theme(legend.position = "none") +
+                  facet_grid(MassFeature.otherion ~ Project, scales = "free")
+      } else {
+            Plot.allion <<- ggplot(allion.df, aes(x = RT, y = Intensity, 
+                                                  color = File)) +
+                  geom_line() + ggtitle(paste(allion.df$Mode[1], 
+                                              allion.df$Matrix[1], 
+                                              allion.df$MassFeature[1])) +
+                  xlab("RT (min)") +
+                  geom_vline(data = allion.df, aes(xintercept = RT.original),
+                             linetype = "dashed", size = 0.5, color = "gray50") +
+                  theme(legend.position = "none") +
+                  facet_wrap(~ MassFeature.otherion, scales = "free")
+      }
       Plot.allion
       ggsave(paste(allion.df$Mode[1], allion.df$Matrix[1], 
                    allion.df$MassFeature[1], FileSuffix),
