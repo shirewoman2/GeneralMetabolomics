@@ -40,10 +40,16 @@ allions <- function(MF.df, Files, CameraList){
       require(plyr)
       require(dplyr)
       require(stringr)
+      require(xcms)
+      
+      OrigDir <- getwd()
+      setwd("I:/General LCMS scripts")
+      source("eic function.R")
+      setwd(OrigDir)
       
       OtherIonsIndex <- which(str_detect(names(CameraList), "otherions$"))
       Other.df <- CameraList[[OtherIonsIndex]]
-      Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature, ]
+      Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature[1], ]
       for (m in 1:nrow(Other.df)){
             if(complete.cases(Other.df$mzOfM[m])){
                   Other.df$mz[m] <- as.numeric(Other.df$mzOfM[m])
