@@ -13,31 +13,49 @@
 #       c. ionization mode (Mode)
 #       d. and matrix (Matrix)
 # 3. Ions, a list of which ions you want or the specific m/z to use. Specific 
-#    ions to call by name are: "M+Na", "M+1", "M+2", "M+3", "M+Cl", "M-H2O".
-# !!!!! You must have sourced the function "eic" for this to run. !!!!!
+#    ions to call by name are: "M+Na", "M+1", "M+2", "M+3", "M+Cl", "M-H2O", 
+#    "M-1", "M-2", "M-3". Default is all of those.
+# Output is data.frame with all the EICs.
 
-specifions <- function(MF.df, Files, Ions) {
+
+
+specifions <- function(MF.df, Files, 
+                       Ions = c("M+Na", "M-Na", "M+1", "M+2", "M-1", "M-2", 
+                                "M-H2O", "M+H2O")) {
       
       require(plyr)
       
-      PossibleIons <- data.frame(Ion = c("M+Na", 
+      OrigDir <- getwd()
+      setwd("I:/General LCMS scripts")
+      source("eic function.R")
+      setwd(OrigDir)
+      
+      PossibleIons <- data.frame(Ion = c("M+Na",
+                                         "M-Na",
+                                         "M+Cl", 
+                                         "M-Cl",
+                                         "M+H2O",
+                                         "M-H2O",
                                          "M+1", 
                                          "M+2", 
                                          "M+3",
-                                         "M+Cl", 
-                                         "M-H2O",
                                          "M-1",
                                          "M-2", 
                                          "M-3"),
-                                 MassAdd = c(22.98977- 1.0073, # positive mode: If molecule gains Na, wouldn't also gain H
+                                 MassAdd = c(22.98977- 1.0073, 
+                                             -22.98977+ 1.0073,
+                                             34.96885+1.0073, 
+                                             -34.96885-1.0073, 
+                                             18.01056,
+                                             -18.01056,
                                              1.008665,
                                              2*1.008665,
                                              3*1.008665,
-                                             34.96885+1.0073, # negative mode: If molecule gains Cl, wouldn't also lose H
-                                             -18.01056,
                                              -1.008665,
                                              -2*1.008665,
-                                             -3*1.008665))
+                                             -3*1.008665),
+                                 Mode = c("pos", "pos", "neg", "neg", 
+                                          rep(NA, 8)))
       
       MF.df$MassFeature.ion <- "originally detected ion"
       
@@ -58,8 +76,16 @@ specifions <- function(MF.df, Files, Ions) {
       }
       
       EICs <- eic(MF.df, Files)
-      EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
-                   by = c("MassFeature"))
+      if ("MassFeature.ion" %in% names(EICs) & 
+                "MassFeature.ion" %in% names(MF.df)){
+            EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
+                         by = c("MassFeature", "MassFeature.ion"))
+      } else {
+            EICs <- join(EICs, MF.df[, c("MassFeature", "mz", "MassFeature.ion")], 
+                         by = c("MassFeature"))
+      }
+      
+      
       return(EICs)
       
 }
