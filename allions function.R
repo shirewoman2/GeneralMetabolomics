@@ -50,28 +50,32 @@ allions <- function(MF.df, Files, CameraList){
       OtherIonsIndex <- which(str_detect(names(CameraList), "otherions$"))
       Other.df <- CameraList[[OtherIonsIndex]]
       Other.df <- Other.df[Other.df$MassFeature == MF.df$MassFeature[1], ]
+      
+      Other.df$Mode <- MF.df$Mode
+      Other.df$Matrix <- MF.df$Matrix
+      
       for (m in 1:nrow(Other.df)){
-            if(complete.cases(Other.df$mzOfM[m])){
-                  Other.df$mz[m] <- as.numeric(Other.df$mzOfM[m])
+            if(complete.cases(Other.df$mzOfI[m])){
+                  Other.df$mz[m] <- as.numeric(Other.df$mzOfI[m])
             } else {
                   # If it's an adduct, look for the M+H or M-H ion since that's
                   # likely the most abundant peak.
                   if (str_detect(Other.df$Charge[m], "\\+")) {
-                        Other.df$mz[m] <- Other.df$mzOfM[m] + 1.0073
+                        Other.df$mz[m] <- Other.df$MassOfM[m] + 1.0073
                   } else {
-                        Other.df$mz[m] <- Other.df$mzOfM[m] - 1.0073
+                        Other.df$mz[m] <- Other.df$MassOfM[m] - 1.0073
                   }
                   
             }
       }
       
-      # No need to plot ions if the main ion is just M. Removing those.
-      Other.df <- Other.df[Other.df$IonType != "M", ]
+      # No need to plot ions if the main ion is just I. Removing those.
+      Other.df <- Other.df[Other.df$IonType != "I", ]
       
       if (nrow(Other.df) > 0){
             
             for (m in 1:nrow(Other.df)){
-                  if (Other.df$Charge[m] == "-" | Other.df$Charge[m] == "\\+") {
+                  if (Other.df$Charge[m] == "-" | Other.df$Charge[m] == "+") {
                         if (str_detect(Other.df$Charge[m], "\\+")){
                               Other.df$MassFeature.otherion[m] <- 
                                     paste("M+H if orig is", Other.df$IonType[m])
@@ -101,10 +105,10 @@ allions <- function(MF.df, Files, CameraList){
       
       EICs <- eic(Other.df, Files)
       
-      EICs <- join(EICs, Other.df[, c("MassFeature", "mz", "IonType", 
-                                      "mzOfM", "Charge", "IsoGroup",
-                                      "MassFeature.otherion")], 
-                   by = c("MassFeature", "MassFeature.otherion"))
+      Other.df$RT <- NULL
+      EICs <- join(EICs, Other.df, 
+                   by = c("MassFeature", "Matrix", "Mode", 
+                          "MassFeature.otherion"))
       return(EICs)
 }
 
