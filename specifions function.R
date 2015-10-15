@@ -13,15 +13,15 @@
 #       c. ionization mode (Mode)
 #       d. and matrix (Matrix)
 # 3. Ions, a list of which ions you want or the specific m/z to use. Specific 
-#    ions to call by name are: "M+Na", "M+1", "M+2", "M+3", "M+Cl", "M-H2O", 
-#    "M-1", "M-2", "M-3". Default is all of those.
+#    ions to call by name are: "I+Na", "I+1", "I+2", "I+3", "I+Cl", "I-H2O", 
+#    "I-1", "I-2", "I-3". Default is all of those.
 # Output is data.frame with all the EICs.
 
 
 
 specifions <- function(MF.df, Files, 
-                       Ions = c("M+Na", "M-Na", "M+1", "M+2", "M-1", "M-2", 
-                                "M-H2O", "M+H2O")) {
+                       Ions = c("I+Na", "I-Na", "I+1", "I+2", "I-1", "I-2", 
+                                "I-H2O", "I+H2O")) {
       
       require(plyr)
       
@@ -30,20 +30,20 @@ specifions <- function(MF.df, Files,
       source("eic function.R")
       setwd(OrigDir)
       
-      PossibleIons <- data.frame(Ion = c("M+Na",
-                                         "M-Na",
-                                         "M+K",
-                                         "M-K",
-                                         "M+Cl", 
-                                         "M-Cl",
-                                         "M+H2O",
-                                         "M-H2O",
-                                         "M+1", 
-                                         "M+2", 
-                                         "M+3",
-                                         "M-1",
-                                         "M-2", 
-                                         "M-3"),
+      PossibleIons <- data.frame(Ion = c("I+Na",
+                                         "I-Na",
+                                         "I+K",
+                                         "I-K",
+                                         "I+Cl", 
+                                         "I-Cl",
+                                         "I+H2O",
+                                         "I-H2O",
+                                         "I+1", 
+                                         "I+2", 
+                                         "I+3",
+                                         "I-1",
+                                         "I-2", 
+                                         "I-3"),
                                  MassAdd = c(22.98977- 1.0073, 
                                              -22.98977+ 1.0073,
                                              39.0983 - 1.0073,
