@@ -37,7 +37,7 @@
 #             d. pseudospectrum group (pcgroup), 
 #             e. the type of ion CAMERA thinks this ion might be (IonType), 
 #             f. the possible charge of the ion (Charge), 
-#             g. the m/z of the other, potentially related ion (mzOfM), 
+#             g. the m/z of the other, potentially related ion (MassOfM), 
 #             h. and a group number where other ions with the same number
 #             are potentially isotopes of this one (IsoGroup). 
 
@@ -52,7 +52,7 @@
 # run that function, you'll have to figure out which ions correspond to which
 # in the full dataset.   - Laura
 
-camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
+camera <- function(xset, Mode, PPM = 15, PVal = 0.01) {
       require(xcms)
       require(CAMERA)
       require(plyr)
@@ -159,11 +159,11 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       for (i in 1:nrow(IsoList)){
             
             if (IsoList$IonType[i] == "M") {
-                  IsoList$mzOfM[i] <- IsoList$mz[i]
+                  IsoList$MassOfM[i] <- IsoList$mz[i]
             } else {
                   n <- as.numeric(str_sub(IsoList$IonType[i], 3, 3))
                   
-                  IsoList$mzOfM[i] <- IsoList$mz[i] - n * 1.00866
+                  IsoList$MassOfM[i] <- IsoList$mz[i] - n * 1.00866
                   
             }
             
@@ -184,7 +184,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
       # Split the adduct column into one list for every possible adduct with 
       # each list having 4 pieces:
       # 1. IonType = type of adduct, eg. M+Cl
-      # 2. mzOfM = the neutral mass of that particular adduct
+      # 2. MassOfM = the neutral mass of that particular adduct
       # 3. MassFeature 
       # 4. pcgroup
       
@@ -195,7 +195,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
             
             IonType <- c()
             Charge <- c()
-            mzOfM <- c()
+            MassOfM <- c()
             
             for (m in 2:length(AdSplit[[i]])){
                   
@@ -205,7 +205,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                   Charge[m-1] <- unlist(str_extract(AdSplit[[i]][m], "\\].{1,2}"))
                   Charge[m-1] <- str_trim(gsub("\\]", "", Charge[m-1]))
                   
-                  mzOfM[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
+                  MassOfM[m-1] <- str_trim(str_extract(AdSplit[[i]][m], " .*"))
             }
             
             AdList[[i]] <- data.frame(MassFeature = Adduct$MassFeature[i],
@@ -215,8 +215,8 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.0001) {
                                             Adduct$pcgroup[i])),
                                       IonType = IonType,
                                       Charge = Charge,
-                                      mzOfM = 
-                                            as.numeric(mzOfM),
+                                      MassOfM = 
+                                            as.numeric(MassOfM),
                                       stringsAsFactors = FALSE)
       }
       
