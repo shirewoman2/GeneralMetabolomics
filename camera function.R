@@ -159,15 +159,18 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.01) {
       for (i in 1:nrow(IsoList)){
             
             if (IsoList$IonType[i] == "M") {
-                  IsoList$MassOfM[i] <- IsoList$mz[i]
+                  IsoList$mzOfI[i] <- IsoList$mz[i]
             } else {
                   n <- as.numeric(str_sub(IsoList$IonType[i], 3, 3))
                   
-                  IsoList$MassOfM[i] <- IsoList$mz[i] - n * 1.00866
+                  IsoList$mzOfI[i] <- IsoList$mz[i] - n * 1.00866
                   
             }
             
       }
+      
+      IsoList$IonType <- sub("M", "I", IsoList$IonType)
+      
       
       # Adducts
       # Make the column "adduct" be character data instead of the default, factor.
@@ -215,8 +218,7 @@ camera <- function(xset, Mode, PPM = 15, PVal = 0.01) {
                                             Adduct$pcgroup[i])),
                                       IonType = IonType,
                                       Charge = Charge,
-                                      MassOfM = 
-                                            as.numeric(MassOfM),
+                                      MassOfM = as.numeric(MassOfM),
                                       stringsAsFactors = FALSE)
       }
       
