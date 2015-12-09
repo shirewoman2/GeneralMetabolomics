@@ -58,9 +58,11 @@
 # number to whatever you want, though. See the "Quality control" section. 
 # 
 # 7. Set the ionization mode (see the section "Housekeeping") as appropriate 
-# for your data for to remove the appropriate set of reference ions.
+# for your data to remove the appropriate set of reference ions. If you don't
+# have the same reference ions as the Agilent 6560 QTOF I've been using, 
+# you'll want to adjust which ions you remove.
 #
-# Email me (Laura) at shirewoman2@gmail.com if you have questions.
+# Email me (Laura) at shireman@uw.edu if you have questions.
 #
 
 
